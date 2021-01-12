@@ -12,7 +12,6 @@
  * Error codes are stored as uint16_t variables. The first 15 bits are used as an error code number representation, meaning
  *  that there are 2^15-1 = 32767 available error codes. The most significant bit (MSb) is used as a critical error flag.
  *
- *
  * All error codes are documented in the Errors.md file. (not ready yet).
  *
  * @todo Add Errors.md file with all needed descriptions and clean the comments on the error codes.

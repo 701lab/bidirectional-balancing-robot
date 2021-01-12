@@ -6,6 +6,7 @@ void dummy_delay(uint32_t duration);
 
 int main(void)
 {
+
     RCC->AHB2ENR |= RCC_AHB2ENR_GPIOBEN;
 
     GPIOB->MODER &= ~(GPIO_MODER_MODE0_Msk | GPIO_MODER_MODE1_Msk | GPIO_MODER_MODE2_Msk);

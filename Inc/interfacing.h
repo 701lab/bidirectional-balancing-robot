@@ -15,12 +15,6 @@
 /****************************************************************************************/
 
 /*!
- * CHOOSE THE USED BOARD HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- */
-#define NUCLEO_BOARD //!< This code is tested on the nucleo board.s
-//#define ANDECHSER_BOARD //!< This code is tested on the Andechser board.
-
-/*!
  * @brief Allows mistake log to save time of the mistake.
  *
  * In order to log time mistakes log needs to have time clocking timer that will count seconds and milliseconds.
@@ -377,20 +371,8 @@ void uart1_send_array(uint32_t number_of_bytes, uint8_t data_to_send[]);
     #define PLLR_VALUE              (3U) // PLLR is dividing by 8.
 #endif
 
-#ifdef NUCLEO_BOARD
-    #define PLLM_VALUE                  (5U) // PLLM is dividing by 6 because HSE frequency is 24 MHz.
-    #ifdef ANDECHSER_BOARD
-        #error "Both boards are selected!"
-    #endif /* ANDECHSER_BOARD */
-#endif /* NUCLEO_BOARD */
 
-#ifdef ANDECHSER_BOARD
-    #define PLLM_VALUE                  (1U) // PLLM is dividing by 2 because HSE frequency is 8 MHz.
-    #ifdef NUCLEO_BOARD
-        #error "Both boards are selected!"
-    #endif /* NUCLEO_BOARD */
-#endif
-
+#define PLLM_VALUE                  (1U) // PLLM is dividing by 2 because HSE frequency is 8 MHz.
 #define PLLM_VALUE_WITH_HSI         (3U) // PLLM is dividing by 4 because HSI frequency is 16 MHz.
 #define PLLQ_VALUE                  (3U) // PLLQ is dividing by 8.
 #define PLLP_VALUE                  (8U) // PLLP current divider value.
@@ -454,13 +436,6 @@ void uart1_send_array(uint32_t number_of_bytes, uint8_t data_to_send[]);
 #if (SPI3_DESIRED_FREQUENCY > 4000000)
     #error "SPI3 frequency is bigger than maximum allowed for TMC5130 4 MHz!"
 #endif
-
-//! Check if both boards types were not selected.
-#ifndef ANDECHSER_BOARD
-    #ifndef NUCLEO_BOARD
-            #error "No board has been selected. Define either ANDECHSER_BOARD or NUCLEO_BOARD before include of the interfacing.h"
-    #endif /* NUCLEO_BOARD */
-#endif /* ANDECHSER_BOARD */
 
 /****************************************************************************************/
 /*                                                                                      */
