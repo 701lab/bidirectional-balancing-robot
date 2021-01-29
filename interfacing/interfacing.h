@@ -1,5 +1,7 @@
 /*!
  * @file interfacing.h
+ *
+ * @version 0.1.0
  */
 
 #ifndef INTERFACING_H_
@@ -146,20 +148,6 @@ void NMI_Handler(void);
 //! Sets up PG10 as master clock output (MCO) pin with a given source.
 void setup_master_clock_output(mcu_rcc_mco_source frequency_source);
 
-/****************************************************************************************/
-/*                                                                                      */
-/*                                      Debugging                                       */
-/*                                                                                      */
-/****************************************************************************************/
-
-//!Initializes all debug related stuff.
-uint32_t setup_debug_features(void);
-
-//! Updates seconds from startup on timer 15 update event interrupt.
-void TIM1_BRK_TIM15_IRQHandler(void);
-
-//! Makes misteakes_log entry with given mistake code at the current time if time logging is enabled.
-uint32_t add_mistake_to_the_log(uint32_t mistake_code);
 
 /****************************************************************************************/
 /*                                                                                      */
@@ -170,8 +158,6 @@ uint32_t add_mistake_to_the_log(uint32_t mistake_code);
 void setup_flash_option_bytes(void);
 
 void set_nrst_pin_mode(mcu_nrst_mode desired_mode);
-
-void setup_leds(void);
 
 // Toggles PA4 pin high.
 void light_up_blue_led(void);

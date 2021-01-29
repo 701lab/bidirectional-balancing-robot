@@ -8,3 +8,12 @@
 
 
 
+/*!
+ * @brief Sets up all project related peripherals.
+ */
+void setup_device(void)
+{
+    setup_leds();
+}
+
+
