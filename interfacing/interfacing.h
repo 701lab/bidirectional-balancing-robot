@@ -36,7 +36,7 @@
  *          32000000, 34000000 ... 62000000, 64000000 ... 148000000, 15000000.
  */
 #ifndef SYSTEM_MAIN_FREQUENCY
-    #define SYSTEM_MAIN_FREQUENCY               16000000 // Hz
+    #define SYSTEM_MAIN_FREQUENCY               64000000 // Hz
 #endif /* SYSTEM_MAIN_FREQUENCY */
 
 /*!

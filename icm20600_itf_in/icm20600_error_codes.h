@@ -1,7 +1,7 @@
 /*!
  * @file icm20600_error_codes.h
  *
- * @brief This file contains all error codes for the interfacing library.
+ * @brief This file contains all error codes for the ICM-20600 interfacing independent library.
  *
  * All error codes are divided into tolerable and critical. Tolerable errors can be fully handled by the system and just warn users
  *  about occurred problems. Critical mistakes can lead to unknown behavior of the system, which can cause harm and must be handled properly.
@@ -12,7 +12,7 @@
  * Error codes are stored as uint16_t variables. The first 15 bits are used as an error code number representation, meaning
  *  that there are 2^15-1 = 32767 available error codes. The most significant bit (MSb) is used as a critical error flag.
  *
- * All error codes are documented in the Errors.md file. (not ready yet).
+ * All error codes are documented in the ICM20600_errors.md file. (not ready yet).
  *
  * @todo Add Errors.md file with all needed descriptions and clean the comments on the error codes.
  * @todo Test the ability to really change MUC_NAMESPACE_OFFSET outside this file.
