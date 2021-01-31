@@ -24,3 +24,42 @@
 
 #include "itf_drv8701.h"
 
+
+void setup_motor1( void );
+void setup_motor2( void );
+
+
+void setup_encoder1( void )
+{
+    RCC->APB1ENR1 |= RCC_APB1ENR1_TIM3EN;
+
+    TIM3->PSC = 0;
+    TIM3->ARR = 0xFFFF;      // encoder timer must be set up with maximum int16_t value in order to use uint16_t overflow in calculations of position and speed.
+//    TIM3->CCER |= 0x02;     // Change counting direction. Should be uncommented if encoder direction reversal is needed
+    TIM3->SMCR |= 0x03;     // Set encoder mode.
+    TIM3->CNT = 0;          // Clear counter before start.
+    TIM3->CR1 |= TIM_CR1_CEN;
+}
+
+void setup_encoder2( void )
+{
+    RCC->APB1ENR1 |= RCC_APB1ENR1_TIM4EN;
+
+    TIM4->PSC = 0;
+    TIM4->ARR = 0xFFFF;      // encoder timer must be set up with maximum int16_t value in order to use uint16_t overflow in calculations of position and speed.
+//    TIM4->CCER |= 0x02;     // Change counting direction. Should be uncommented if encoder direction reversal is needed
+    TIM4->SMCR |= 0x03;     // Set encoder mode.
+    TIM4->CNT = 0;          // Clear counter before start.
+    TIM4->CR1 |= TIM_CR1_CEN;
+}
+
+
+inline int16_t get_encoder1_value(void)
+{
+    return TIM3->CNT;
+}
+
+inline int16_t get_encoder2_value(void)
+{
+    return TIM4->CNT;
+}

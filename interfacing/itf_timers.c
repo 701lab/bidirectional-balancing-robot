@@ -6,10 +6,6 @@
 
 
 
-
-
-
-
 /*!
  * @brief Set up timer 6 as milliseconds counter.
  *
@@ -18,25 +14,26 @@
  * @todo Add DMA update of the seconds value not to call interrupt every time.
  */
 
-uint32_t setup_debug_features(void)
+void setup_timers( void )
 {
-    // Enable timer 6 clocling.
+    // Enable timers clocking.
     RCC->APB1ENR1 |= RCC_APB1ENR1_TIM6EN;
 
-    // Set up prescaler and reload registers.
+    // Set up prescaler and reload to count exactly 1000 pulses every second and overflow every second.
     TIM6->PSC |= (uint32_t)((SYSTEM_MAIN_FREQUENCY / 1000) - 1);
     TIM6->ARR = 1000 - 1;
 
     //Enable interrupt on update event.
     TIM6->DIER |= TIM_DIER_UIE;
-    NVIC_SetPriority(TIM6_DAC_IRQn, 2);
+    NVIC_SetPriority(TIM6_DAC_IRQn, 2); // Interrupt should not be too important.
     NVIC_EnableIRQ(TIM6_DAC_IRQn);
 
     // Generate update event to enable new register values and start timer.
     TIM6->EGR |= TIM_EGR_UG;
     TIM6->CR1 |= TIM_CR1_CEN;
 
-    return 0;
+
+
 }
 
 /*!
@@ -50,3 +47,4 @@ void TIM6_DACUNDER_IRQHandler()
     // Update minutes value.
     seconds_from_setup += 1;
 }
+

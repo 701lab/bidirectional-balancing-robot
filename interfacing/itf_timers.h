@@ -17,8 +17,6 @@ void setup_timers( void );
 
 void setup_system_timer( void );
 
-void delay( uint32_t duration_in_milliseconds );
-
 //! Updates seconds from startup.
 void TIM6_DACUNDER_IRQHandler(void);
 
