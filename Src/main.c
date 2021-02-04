@@ -9,7 +9,7 @@ void dummy_delay(uint32_t duration);
 
 int main(void)
 {
-    setup_device();
+    init_device();
 
     while (1)
     {

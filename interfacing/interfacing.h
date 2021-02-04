@@ -38,7 +38,7 @@
  *          32000000, 34000000 ... 62000000, 64000000 ... 148000000, 15000000.
  */
 #ifndef SYSTEM_MAIN_FREQUENCY
-    #define SYSTEM_MAIN_FREQUENCY               64000000 // Hz
+    #define SYSTEM_MAIN_FREQUENCY               32000000 // Hz
 #endif /* SYSTEM_MAIN_FREQUENCY */
 
 /*!
@@ -47,7 +47,7 @@
  * @note Can be changed by user.
  */
 #ifndef SYSTICK_INTERRUPT_FREQUENCY
-    #define SYSTICK_INTERRUPT_FREQUENCY         50 // Hz
+    #define SYSTICK_INTERRUPT_FREQUENCY         10 // Hz
 #endif /* SYSTICK_INTERRUPT_FREQUENCY */
 
 #ifndef MISTAKES_LOG_SIZE
@@ -63,6 +63,12 @@
 #ifndef SPI2_DESIRED_FREQUENCY
     #define SPI2_DESIRED_FREQUENCY              8000000 // Hz
 #endif /* SPI2_WORKING_FREQUENCY */
+
+
+#ifndef PWM_FREQUENCY
+    #define PWM_FREQUENCY                   20000   // Hz = 20 Khz
+    #define PWM_PRECISION                   ( SYSCLK_FREQUENCY / PWM_FREQUENCY - 1 )    // -1 is needed for proper timers setup. Equation shouldn't be changed
+#endif /* PWM_FREQUENCY */
 
 
 /****************************************************************************************/
@@ -131,22 +137,6 @@ typedef struct{
 
 } mistake;
 
-/****************************************************************************************/
-/*                                                                                      */
-/*                                   Clocking setup                                     */
-/*                                                                                      */
-/****************************************************************************************/
-
-//! Sets up SYSCLK to SYSTEM_MAIN_FREQUENCY.
-void setup_system_clock(void);
-
-uint32_t setup_pll_as_sysclk_source(mcu_pll_source frequency_source);
-
-//! Handles HSE fail interrupt.
-void NMI_Handler(void);
-
-//! Sets up PG10 as master clock output (MCO) pin with a given source.
-void setup_master_clock_output(mcu_rcc_mco_source frequency_source);
 
 
 /****************************************************************************************/

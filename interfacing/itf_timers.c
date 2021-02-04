@@ -4,8 +4,6 @@
 
 #include "itf_timers.h"
 
-
-
 /*!
  * @brief Set up timer 6 as milliseconds counter.
  *
@@ -25,15 +23,12 @@ void setup_timers( void )
 
     //Enable interrupt on update event.
     TIM6->DIER |= TIM_DIER_UIE;
-    NVIC_SetPriority(TIM6_DAC_IRQn, 2); // Interrupt should not be too important.
-    NVIC_EnableIRQ(TIM6_DAC_IRQn);
+    NVIC_SetPriority( TIM6_DAC_IRQn, 2 ); // Interrupt should not be too important.
+    NVIC_EnableIRQ( TIM6_DAC_IRQn );
 
     // Generate update event to enable new register values and start timer.
     TIM6->EGR |= TIM_EGR_UG;
     TIM6->CR1 |= TIM_CR1_CEN;
-
-
-
 }
 
 /*!
@@ -46,5 +41,27 @@ void TIM6_DACUNDER_IRQHandler()
 
     // Update minutes value.
     seconds_from_setup += 1;
+}
+
+/*!
+ * @brief Sets up SysTick timer interrupt with respect to the main system frequency.
+ *
+ * @note SysTick timer uses the default prescaler of 8 because it is a 24-bit timer that will reload on relatively
+ *          small frequencies (high prescaler values). This can help to not overflow the counter on small
+ *          SysTick frequencies and high system frequencies.
+ */
+void setup_system_timer( void )
+{
+    // Set system timer reload register.
+    SysTick->LOAD = SYSTEM_MAIN_FREQUENCY / (8 * SYSTICK_INTERRUPT_FREQUENCY) - 1;
+
+    // Reset counter value to 0 before start.
+    SysTick->VAL = 0;
+
+    // Enable interrupt.
+    NVIC_EnableIRQ( SysTick_IRQn );
+
+    // Start SysTick timer with default prescaler of 8 and enable interrupt.
+    SysTick->CTRL |= 0x03;
 }
 

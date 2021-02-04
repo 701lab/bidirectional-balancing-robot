@@ -6,7 +6,7 @@
 #define ITF_NRF24L01P_H_
 
 #include "interfacing.h"
-
+#include "itf_debug.h"
 
 
 #endif /* ITF_NRF24L01P_H_ */

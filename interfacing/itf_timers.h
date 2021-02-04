@@ -11,7 +11,7 @@
 #include "interfacing.h"
 
 // Value represents current millisecond of the system time
-#define CURRENT_MILLISECOND         (TIM6->CNT)
+#define CURRENT_MILLISECOND_Val         (TIM6->CNT)
 
 void setup_timers( void );
 

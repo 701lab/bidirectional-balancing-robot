@@ -20,14 +20,23 @@
  *
  * Encoder 2:
  *  PB6, PB7 - encoder2 inputs 1 and 2 respectively (TIM4 CH1 and CH2 respectively, alternate function 2, ENCODER counter mode).
+ *
+ * @todo This code does not implements interrupt handling. It must be implemented in the future.
+ *
  */
 
 #include "itf_drv8701.h"
 
 
-void setup_motor1( void );
-void setup_motor2( void );
+void setup_drv8701_1( void )
+{
 
+}
+
+void setup_drv8701_2( void )
+{
+
+}
 
 void setup_encoder1( void )
 {
@@ -53,13 +62,22 @@ void setup_encoder2( void )
     TIM4->CR1 |= TIM_CR1_CEN;
 }
 
+void setup_motor1( void )
+{
 
-inline int16_t get_encoder1_value(void)
+}
+
+void setup_motor2( void )
+{
+
+}
+
+inline int16_t get_encoder1_value( void )
 {
     return TIM3->CNT;
 }
 
-inline int16_t get_encoder2_value(void)
+inline int16_t get_encoder2_value( void )
 {
     return TIM4->CNT;
 }

@@ -6,6 +6,7 @@
 #define ITF_ICM20600_H_
 
 #include "interfacing.h"
+#include "itf_debug.h"
 
 
 
