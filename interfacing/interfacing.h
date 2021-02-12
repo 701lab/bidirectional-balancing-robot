@@ -1,7 +1,5 @@
 /*!
  * @file interfacing.h
- *
- * @version 0.1.0
  */
 
 #ifndef INTERFACING_H_
@@ -47,22 +45,22 @@
  * @note Can be changed by user.
  */
 #ifndef SYSTICK_INTERRUPT_FREQUENCY
-    #define SYSTICK_INTERRUPT_FREQUENCY         10 // Hz
+    #define SYSTICK_INTERRUPT_FREQUENCY         40 // Hz
 #endif /* SYSTICK_INTERRUPT_FREQUENCY */
 
 #ifndef MISTAKES_LOG_SIZE
     #define MISTAKES_LOG_SIZE                   10 // Records
 #endif /* MISTAKES_LOG_SIZE */
 
-//! TMC5130 and AEAT8800 SPI work frequency.
+//! NRF24l01p SPI frequency
 #ifndef SPI3_DESIRED_FREQUENCY
-    #define SPI3_DESIRED_FREQUENCY              1000000 // Hz
+    #define SPI3_DESIRED_FREQUENCY              8000000 // Hz
 #endif /* SPI3_WORKING_FREQUENCY */
 
-//! SPI2 work frequency.
+//! ICM-20600 SPI frequency
 #ifndef SPI2_DESIRED_FREQUENCY
     #define SPI2_DESIRED_FREQUENCY              8000000 // Hz
-#endif /* SPI2_WORKING_FREQUENCY */
+#endif /* SPI3_WORKING_FREQUENCY */
 
 
 #ifndef PWM_FREQUENCY
@@ -84,33 +82,12 @@ enum question_answers
     YES = 1UL
 };
 
-/*! FLASH_OTPTR register NRST_MODE field options for error checking with static analyzer. */
-typedef enum mcu_nrst_mode
-{
-    NRST_INPUT_ONLY_MODE = 1U,      // 0b01
-    NRST_GPIO_MODE = 2U,            // 0b10
-    NRST_INPUT_OUTPUT_MODE = 3U,    // 0b11 (default)
-} mcu_nrst_mode;
-
 /*! RCC_PLLCFGR PLL source values for error checking with static analyzer. */
 typedef enum mcu_pll_source
 {
     HSI16_AS_PLL_SOURCE = RCC_PLLCFGR_PLLSRC_HSI,
     HSE_AS_PLL_SOURCE = RCC_PLLCFGR_PLLSRC_HSE,
 } mcu_pll_source;
-
-/*! RCC_CFGR MCO source options for error checking with static analyzer. */
-typedef enum mcu_rcc_mco_source
-{
-    MCO_DISABLED = 0U,              // 0b0000
-    SYSCLK_AS_MCO_SOURCE = 1U,      // 0b0001
-    HSI16_AS_MCO_SOURCE = 3U,       // 0b0011
-    HSE_AS_MCO_SOURCE = 4U,         // 0b0100
-    PLL_AS_MCO_SOURCE = 5U,         // 0b0101
-    LSI_AS_MCO_SOURCE = 6U,         // 0b0110
-    LSE_AS_MCO_SOURCE = 7U,         // 0b0111
-    HSI48_AS_MCO_SOURCE = 8U,       // 0b1000
-} mcu_rcc_mco_source;
 
 /****************************************************************************************/
 /*                                                                                      */
@@ -127,7 +104,8 @@ typedef enum mcu_rcc_mco_source
  *
  * Not defining MISTAKE_LOG_SHOULD_SAVE_TIME disables time stamps saving, which lowers SRAM memory consumption by 4*MISTAKES_LOG_SIZE bytes.
  */
-typedef struct{
+typedef struct
+{
     uint16_t mistake_code; //!< Code of the occurred mistake. Used always.
 
 #ifdef MISTAKE_LOG_SHOULD_SAVE_TIME
@@ -137,119 +115,6 @@ typedef struct{
 
 } mistake;
 
-
-
-/****************************************************************************************/
-/*                                                                                      */
-/*                               General setup functions                                */
-/*                                                                                      */
-/****************************************************************************************/
-
-void setup_flash_option_bytes(void);
-
-void set_nrst_pin_mode(mcu_nrst_mode desired_mode);
-
-// Toggles PA4 pin high.
-void light_up_blue_led(void);
-
-// Toggles PA4 pin low.
-void put_down_blue_led(void);
-
-//! Toggles PA4 pin.
-void toggle_blue_led(void);
-
-//! Toggles PA5 pin high.
-void light_up_red_led(void);
-
-//! Toggles PA5 pin low.
-void put_down_red_led(void);
-
-//! Toggles PA5 pin.
-void toggle_red_led(void);
-
-//! Sets up SysTick timer and interrupt.
-void setup_system_timer(void);
-
-//! Sets up only features related to the main board functionality.
-void setup_base_peripherals(void);
-
-//! Sets SPI2 with a frequency stated in SPI2_DESIRED_FREQUENCY definition.
-void setup_spi2();
-
-//! Transmits and receives a single byte via SPI2.
-uint8_t spi2_write_single_byte(const uint8_t byte_to_send);
-
-//! Sets up all board's features.
-void setup_all_peripherals(void);
-
-// ========================================================================//
-// =                                                                     = //
-// =                  =====  Not for this version =====                  = //
-// =                                                                     = //
-// ========================================================================//
-
-//
-//void adcs_setup(void);
-//
-//void uart3_setup(uint32_t data_rate);
-//
-//uint32_t uart3_send_single_byte(uint8_t byte_to_send);
-//
-//uint8_t uart3_read_single_byte(void);
-//
-//void uart3_send_array(uint32_t number_of_bytes, uint8_t data_to_send[]);
-
-/****************************************************************************************/
-/*                                                                                      */
-/*                                 TMC5130 + AEAT-8800                                  */
-/*                                                                                      */
-/****************************************************************************************/
-
-void setup_spi3();
-
-//! Transmits and receives a single byte via SPI3.
-uint8_t spi3_write_single_byte(const uint8_t byte_to_send);
-
-//! This function is needed in particular for AEAT8800
-void spi3_set_mode(uint8_t mode);
-
-void setup_tmc5130_aeat8800_peripherals();
-
-void set_pa8_high(void);
-void set_pa8_low(void);
-
-void set_pa15_high(void);
-void set_pa15_low(void);
-
-//! Toggles the PB6 pin high.
-void disable_tmc5130(void);
-
-//! Toggles the PB6 pin low.
-void enable_tmc5130(void);
-
-/****************************************************************************************/
-/*                                                                                      */
-/*                                 ESP32 communication                                  */
-/*                                                                                      */
-/****************************************************************************************/
-
-void setup_uart1(uint32_t desired_data_rate_in_bauds);
-
-uint32_t uart1_send_single_byte(uint8_t byte_to_send);
-
-/*!
- * @brief Reads a single byte from the UART1.
- *
- * @todo Implement the function.
- */
-uint8_t uart1_read_single_byte(void);
-
-/*!
- * @brief Sends multiple bytes via UART1.
- *
- * @todo Implement the function.
- */
-void uart1_send_array(uint32_t number_of_bytes, uint8_t data_to_send[]);
 
 /****************************************************************************************/
 /*                                                                                      */
@@ -404,13 +269,8 @@ void uart1_send_array(uint32_t number_of_bytes, uint8_t data_to_send[]);
 
 #endif
 
-//! Checks if SPI working frequencies were set up properly.
-#if (SPI2_DESIRED_FREQUENCY > 10000000)
-    #error "SPI2 frequency is bigger than maximum allowed 10 MHz!"
-#endif
-
-#if (SPI3_DESIRED_FREQUENCY > 4000000)
-    #error "SPI3 frequency is bigger than maximum allowed for TMC5130 4 MHz!"
+#if (SPI3_DESIRED_FREQUENCY > 10000000)
+    #error "SPI3 frequency is bigger than maximum allowed 10 MHz!"
 #endif
 
 /****************************************************************************************/

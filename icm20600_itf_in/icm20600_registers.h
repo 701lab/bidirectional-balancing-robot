@@ -11,20 +11,16 @@
 /*                                                                                      */
 /****************************************************************************************/
 
-#define ICM20600_READ_REG                0x80        //!< Write mask for ICM20600 register address.
-#define ICM20600_READ_REG                0x00        //!< Read mask for ICM20600 register address.
+#define ICM20600_WRITE_REGISTER         0x00        //!< Write mask for ICM20600 register address.
+#define ICM20600_READ_REGISTER          0x80        //!< Read mask for ICM20600 register address.
 
-#define ICM20600_ADDRESS_MASK            0x7F        //!< Address mask.
+#define ICM20600_ADDRESS_MASK           0x7F        //!< Address mask.
 
 /****************************************************************************************/
 /*                                                                                      */
 /*                                Registers definition                                  */
 /*                                                                                      */
 /****************************************************************************************/
-
-// @todo Проверить имена и расположения всех добавленных регистров.
-// @todo Обернуть все адреса в (uint8_t)(0xYY) формате
-// @todo Добавить недостающие регистры.
 
 #define ICM20600_XG_OFFS_TC_H                (uint8_t)(0x04)
 #define ICM20600_XG_OFFS_TC_L                (uint8_t)(0x05)
@@ -257,7 +253,7 @@
 #define ICM20600_FIFO_EN_ACCEL_FIFO_EN_Msk          (uint8_t)(0x01 << ICM20600_FIFO_EN_ACCEL_FIFO_EN_Pos)
 #define ICM20600_FIFO_EN_ACCEL_FIFO_EN              ICM20600_FIFO_EN_ACCEL_FIFO_EN_Msk
 #define ICM20600_FIFO_EN_GYRO_FIFO_EN_Pos           (4U)
-#define ICM20600_FIFO_EN_GYRO_FIFO_EN_Pos           (uint8_t)(0x01 << ICM20600_FIFO_EN_GYRO_FIFO_EN_Pos)
+#define ICM20600_FIFO_EN_GYRO_FIFO_EN_Msk           (uint8_t)(0x01 << ICM20600_FIFO_EN_GYRO_FIFO_EN_Pos)
 #define ICM20600_FIFO_EN_GYRO_FIFO_EN               ICM20600_FIFO_EN_GYRO_FIFO_EN_Msk
 
 // FSYNC_INT - 0x36 - RC
@@ -273,7 +269,7 @@
 #define ICM20600_INT_PIN_CFG_FSYNC_INT_MODE_EN_Msk  (uint8_t)(0x01 << ICM20600_INT_PIN_CFG_FSYNC_INT_MODE_EN_Pos)
 #define ICM20600_INT_PIN_CFG_FSYNC_INT_MODE_EN      ICM20600_INT_PIN_CFG_FSYNC_INT_MODE_EN_Msk
 #define ICM20600_INT_PIN_CFG_FSYNC_INT_LEVEL_Pos    (3U)
-#define ICM20600_INT_PIN_CFG_FSYNC_INT_LEVEL_Pos    (uint8_t)(0x01 << ICM20600_INT_PIN_CFG_FSYNC_INT_LEVEL_Pos)
+#define ICM20600_INT_PIN_CFG_FSYNC_INT_LEVEL_Msk    (uint8_t)(0x01 << ICM20600_INT_PIN_CFG_FSYNC_INT_LEVEL_Pos)
 #define ICM20600_INT_PIN_CFG_FSYNC_INT_LEVEL        ICM20600_INT_PIN_CFG_FSYNC_INT_LEVEL_Msk
 #define ICM20600_INT_PIN_CFG_INT_RD_CLEAR_Pos       (4U)
 #define ICM20600_INT_PIN_CFG_INT_RD_CLEAR_Msk       (uint8_t)(0x01 << ICM20600_INT_PIN_CFG_INT_RD_CLEAR_Pos)

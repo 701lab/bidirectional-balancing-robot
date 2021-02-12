@@ -6,12 +6,10 @@
 
 #include "device.h"
 
-
-
 /*!
  * @brief Sets up all project related peripherals.
  */
-void init_device(void)
+void setup_device(void)
 {
     // Enable FPU.
     SCB->CPACR |= 0x3 << 20 ;
@@ -28,18 +26,19 @@ void init_device(void)
 //    setup_motor1();
 //    setup_motor2();
 
+    setup_nrf24l01p_peripherals();
+    setup_icm20600_peripherals();
 
-    /*
-     * System timer should be set up last, so that control loop won't start working before MCU setup is finished.
-     *
-     * @todo In future this setup should be called after every other device (TMC5130 and encoder) were set up.
-     *        Because otherwise it is possible that control loop will ask for data before setup was finished.
-     */
+    dummy_delay(200000);
+
     setup_system_timer();
 
     // @todo Add some kind of control loop zeroing.
     // @todo write the code to init slave devices.
-
 }
 
 
+void dummy_delay(uint32_t duration)
+{
+    for(uint32_t i = 0; i < duration; ++i){}
+}

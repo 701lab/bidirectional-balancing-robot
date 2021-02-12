@@ -10,7 +10,7 @@
 
 //****** typedefs required for the library ******//
 
-// @brief New data type for safe nrf24l01+ data rate setup
+//! New data type for safe nrf24l01+ data rate setup
 typedef enum nrf24_data_rate
 {
 	nrf24_250_kbps = 0x20,
@@ -18,7 +18,7 @@ typedef enum nrf24_data_rate
 	nrf24_2_mbps = 0x08
 } nrf24_data_rate;
 
-// @brief New data type for safe nrf24l01+ power output setup
+//! New data type for safe nrf24l01+ power output setup
 typedef enum nrf24_pa_contol
 {
 	nrf24_pa_min = 0x06,	// 0 dbm RF output power, 11.3 mA dc current consumption
@@ -27,7 +27,7 @@ typedef enum nrf24_pa_contol
 	nrf24_pa_max = 0x00		// -18 dbm RF output power, 7.0 mA dc current consumption
 } nrf24_pa_contol;
 
-// @brief New data type for nrf24 safe nrf24l01+ auto retransmit delay setup
+//! New data type for nrf24 safe nrf24l01+ auto retransmit delay setup
 typedef enum nrf24_auto_retransmit_delay
 {
 	nrf24_wait_250_us = 0x00,
@@ -89,95 +89,81 @@ typedef struct
 	nrf24_data_rate data_rate;
 
 	// Flag that shows that device was already initialized. Needed for internal library error checking optimization. Should be set to 0 at init.
-	uint32_t device_was_initialized;
+	uint32_t was_initialized;
 
 } nrf24l01p;
 
 //****** Functions implemented in the library ******//
 /*
-	@name nrf24_basic_init
 	@brief Sets up nrf24l01+ with parameters specified in the structure of particular instance.
 		Doesn't power up device. Doesn't enable any mode. Should be called at least one time for every nrf24l01+ instance.
  */
 uint32_t nrf24_basic_init(nrf24l01p * nrf24_instance);
 
 /*
-	@name nrf24_check_if_alive
 	@brief Checks if particular devices responses (connected), if not returns mistake code.
  */
 uint32_t nrf24_check_if_alive(nrf24l01p * nrf24_instance);
 
 /*
-	@name nrf24_check_declarations
 	@brief Checks if all function pointers of particular nrf24l01+ instance struct were initialized. If not returns mistake code.
 		Those mistakes should be handled as critical, so any function calling this one should immediately return mistake code.
  */
 uint32_t nrf24_check_declarations(nrf24l01p * nrf24_instance);
 
 /*
-	@name nrf24_tx_mode
 	@brief Changes device setup to TX, powers device up. Device is ready to transmit data.
  */
 uint32_t nrf24_tx_mode(nrf24l01p * nrf24_instance);
 
 /*
-	@name nrf24_rx_mode
 	@brief Changes device settings to RX, powers up the device, start device. Device is ready to receive data.
  */
 uint32_t nrf24_rx_mode(nrf24l01p * nrf24_instance);
 
 /*
-	@name nrf24_set_tx_address
 	@brief Sets new TX and RX pipe 0 addresses. Address should be 5 bytes long. Powers device down, So after this function either nrf24_rx_mode or nrf24_tx_mode should be called.
  */
 uint32_t nrf24_set_tx_address(nrf24l01p * nrf24_instance, const uint8_t new_tx_address[5]);
 
 /*
-	@name nrf24_enable_pipe1
 	@brief Sets new RX address for pipe 1. Address should be 5 bytes long. 4 first bytes are used as base for addresses of pipes 2 to 5.
 		Powers device down, So after this function either nrf24_rx_mode or nrf24_tx_mode should be called.
  */
 uint32_t nrf24_enable_pipe1(nrf24l01p * nrf24_instance, uint8_t pipe_address[]);
 
 /*
-	@name nrf24_enable_pipe2_4
 	@brief Sets new RX address for pipe from 2 to 5 and enables corresponding pipe. Use base from pipe 4, so only one byte changes.
 		Powers device down, So after this function either nrf24_rx_mode or nrf24_tx_mode should be called.
  */
 uint32_t nrf24_enable_pipe2_5(nrf24l01p * nrf24_instance, uint32_t pipe_number, uint8_t pipe_address_last_byte);
 
 /*
-	@name nrf24_send_message
 	@brief Sends message with either acknowledgment or not.
  */
 uint32_t nrf24_send_message(nrf24l01p *nrf24_instance,  void *payload, uint32_t payload_size_in_bytes, int32_t should_flush_tx, int32_t should_send_ack);
 
 /*
-	@name nrf24_is_new_data_availiable
 	@brief Checks if new data is available. If so return the number of the pipe which received message.
  */
 uint8_t nrf24_is_new_data_availiable(nrf24l01p * nrf24_instance);
 
 /*
-	@name nrf24_read_message
 	@brief Saves last received message into the input array.
  */
 uint32_t nrf24_read_message(nrf24l01p * nrf24_instance, void * payload_storage, uint32_t payload_size_in_bytes);
 
 /*
-	@name nrf24_enable_interrupts
 	@brief Enables interrupts with 1 in related input parameters, disables interrupts with 0. So to disable all interrupts call function with all 0 as inputs.
  */
 uint32_t nrf24_enable_interrupts(nrf24l01p * nrf24_instance, uint32_t enable_rx_dr, uint32_t enable_tx_ds, uint32_t enable_max_rt);
 
 /*
-	@name nrf24_get_interrupts_status
 	@brief Returns interrupt flags in raw state. Clears interrupts flags.
  */
 uint8_t nrf24_get_interrupts_status(nrf24l01p * nrf24_instance);
 
 /*
-	@name nrf24_update_retransmission_params
 	@brief Sets new values for retransmit delay and count of retransmissions for particular nrf24l01+ device.
 		If retransmit count = 0 no retransmissions are produced.
  */

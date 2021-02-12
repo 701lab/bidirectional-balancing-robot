@@ -26,5 +26,6 @@
 //! Sets up all project related peripherals.
 void setup_device(void);
 
+void dummy_delay(uint32_t duration);
 
 #endif /* DEVICE_H_ */

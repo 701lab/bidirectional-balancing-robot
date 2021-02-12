@@ -5,13 +5,18 @@
 #include "itf_timers.h"
 
 /*!
+ * TIM14 - counts time with 1 ms precision for mistakes log
+ *
+ * TIM16 - timer for proper delay implementation
+ */
+
+/*!
  * @brief Set up timer 6 as milliseconds counter.
  *
  * The timer will count milliseсonds. Resets every second and call interrupt, that updates seconds counter, represented by a global variable.
  *
  * @todo Add DMA update of the seconds value not to call interrupt every time.
  */
-
 void setup_timers( void )
 {
     // Enable timers clocking.
