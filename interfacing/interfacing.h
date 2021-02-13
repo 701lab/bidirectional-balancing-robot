@@ -62,10 +62,9 @@
     #define SPI2_DESIRED_FREQUENCY              8000000 // Hz
 #endif /* SPI3_WORKING_FREQUENCY */
 
-
 #ifndef PWM_FREQUENCY
     #define PWM_FREQUENCY                   20000   // Hz = 20 Khz
-    #define PWM_PRECISION                   ( SYSCLK_FREQUENCY / PWM_FREQUENCY - 1 )    // -1 is needed for proper timers setup. Equation shouldn't be changed
+    #define PWM_PRECISION                   ( (SYSTEM_MAIN_FREQUENCY / PWM_FREQUENCY) - 1 )    // -1 is needed for proper timers setup. Equation shouldn't be changed
 #endif /* PWM_FREQUENCY */
 
 

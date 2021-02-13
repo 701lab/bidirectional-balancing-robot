@@ -63,5 +63,10 @@
 #define MCU_SPI3_TRANSMISSION_FAILED_Err        (12U + MCU_NAMESPACE_OFFSET + CRITICAL_ERROR_FLAG)   //!< This means that SPI wasn't set up or was disabled.
 #define MCU_SPI3_BAUD_RATE_SETUP_FAILED_Err     (13U + MCU_NAMESPACE_OFFSET)   //!< This means that the desired SPI frequency is very small, and the system frequency is too high.
 
+/*! Motor control related mistakes */
+#define MCU_M1_PWM_TASK_LOWER_THAN_MINIMUM_Err  (20U + MCU_NAMESPACE_OFFSET)
+#define MCU_M1_PWM_TASK_HIGHER_THAN_MAXIMUM_Err (21U + MCU_NAMESPACE_OFFSET)
+#define MCU_M2_PWM_TASK_LOWER_THAN_MINIMUM_Err  (22U + MCU_NAMESPACE_OFFSET)
+#define MCU_M2_PWM_TASK_HIGHER_THAN_MAXIMUM_Err (23U + MCU_NAMESPACE_OFFSET)
 
 #endif /* ITF_ERROR_CODES_H_ */

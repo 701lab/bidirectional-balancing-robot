@@ -1,7 +1,7 @@
 #ifndef MOTORS_H_
 #define MOTORS_H_
 
-#include "implementation.h"
+#include "interfacing.h"
 
 
 
@@ -61,14 +61,14 @@ typedef struct{
 	position_control *position_controller;
 	speed_control *speed_controller;
 
-	void (*motor_enable)(void);
-	void (*motor_disable)(void);
+	void (*enable)(void);
+	void (*disable)(void);
 	uint32_t (*set_pwm_duty_cycle)(const int32_t duty_cycle_coefficient);
-	int16_t	(*get_encoder_counter_value)(void);
+	int16_t	(*get_encoder_value)(void);
 
 	const float encoder_constant;
 
-	const uint32_t max_duty_cycle_coefficient;
+	const uint32_t max_duty_cycle;
 
 } motor;
 

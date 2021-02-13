@@ -21,17 +21,15 @@ void setup_device(void)
 
     setup_leds();
 
-    // init all the other stuff
-
-//    setup_motor1();
-//    setup_motor2();
+    setup_motor1();
+    setup_motor2();
 
     setup_nrf24l01p_peripherals();
     setup_icm20600_peripherals();
 
     dummy_delay(200000);
 
-    setup_system_timer();
+//    setup_system_timer();
 
     // @todo Add some kind of control loop zeroing.
     // @todo write the code to init slave devices.

@@ -40,18 +40,49 @@ icm20600 robot_icm20600 =
                             .set_cs_low = set_icm20600_cs_low,
 
                             .gyro_scale_setup = icm_gyro_500dps_scale,
-                            .accel_scale_setup = icm_accel_4g_scale,
+                            .accel_scale_setup = icm_accel_2g_scale,
                             .complementary_filter_coef = 0.1f,
                             .enable_temperature_sensor = 0,
 
                             .raw_data = { 0, 0, 0, 0, 0, 0, 0 },
                             .gyro_calibration_coefficients = { 0, 0, 0 },
-                            .previous_gyro_x = 0,
-                            .previous_gyro_y = 0,
-                            .previous_gyro_z = 0,
+                            .previous_gyro_values = { 0, 0, 0 },
 
                             .was_initialized = 0
                           };
+
+motor motor1 =
+               {
+                 .disable = set_drv8701_enable_low,
+                 .enable = set_drv8701_enable_high,
+                 .get_encoder_value = get_encoder1_value,
+                 .set_pwm_duty_cycle = set_drv8701_1_duty_cycle,
+
+                 .encoder_constant = 937.2f,
+                 .max_duty_cycle = PWM_PRECISION,
+               };
+
+
+
+motor motor2 =
+               {
+                 .disable = set_drv8701_enable_low,
+                 .enable = set_drv8701_enable_high ,
+                 .get_encoder_value = get_encoder2_value,
+                 .set_pwm_duty_cycle = set_drv8701_2_duty_cycle,
+
+                 .encoder_constant = 937.2f,
+                 .max_duty_cycle = PWM_PRECISION,
+               };
+
+
+// ****** Motor  initialization ****** //
+//motor1.speed_controller = &motor1_speed_cotroller;
+//motor1.position_controller = &motor1_position_controller;
+//motor1_speed_cotroller.kp = 220.0f;
+//motor1_speed_cotroller.ki = 5000.0f;
+//motor1_position_controller.kp = 2.0f;
+//motor1_position_controller.position_precision = 4.0f/motor1.encoder_constant;
 
 /****************************************************************************************/
 /*                                                                                      */
@@ -70,22 +101,51 @@ int main( void )
     add_mistake_to_the_log( nrf24_enable_pipe1( &robot_nrf, nrf_rx_address ) );
     add_mistake_to_the_log( nrf24_rx_mode( &robot_nrf ) );
 
+    add_mistake_to_the_log( icm20600_reset_all_registeres( &robot_icm20600 ) );
+    dummy_delay( 10000 ); // without this delay registers won't reset.
     add_mistake_to_the_log( icm20600_init( &robot_icm20600 ) );
 
+//    add_mistake_to_the_log( icm20600_disable_one_accel_channel( &robot_icm20600, icm_x_axis_index ) );
+//    add_mistake_to_the_log( icm20600_disable_one_gyro_channel( &robot_icm20600, icm_x_axis_index ) );
 
-    // test for Jonas
-//    encode_float_variable(-10450.0f, array_with_result);
-//    result_val = decode_float_variable(array_with_result);
+//    add_mistake_to_the_log(icm20600_disable_gyro(&robot_icm20600));
+//    add_mistake_to_the_log(icm20600_disable_accel(&robot_icm20600));
 
 
+    setup_system_timer();
+
+    motor1.enable();
+    motor2.enable();
+
+    dummy_delay(10000);
 
     while ( 1 )
     {
-        if ( nrf24_is_new_data_availiable( &robot_nrf ) )
-        {
-            nrf24_read_message(&robot_nrf, nrf_input_data, 6);
-            toggle_d4_led();
-        }
+//        for ( int32_t i = 0; i <= PWM_PRECISION; ++i )
+//        {
+//            motor1.set_pwm_duty_cycle(i);
+//            motor2.set_pwm_duty_cycle(i);
+//            dummy_delay(10000);
+//        }
+//        for (int32_t i = PWM_PRECISION; i >= -PWM_PRECISION; --i)
+//        {
+//            motor1.set_pwm_duty_cycle(i);
+//            motor2.set_pwm_duty_cycle(i);
+//            dummy_delay(10000);
+//        }
+//        for ( int32_t i = -PWM_PRECISION; i <= 0; ++i )
+//        {
+//            motor1.set_pwm_duty_cycle(i);
+//            motor2.set_pwm_duty_cycle(i);
+//            dummy_delay(10000);
+//        }
+
+//
+//        if ( nrf24_is_new_data_availiable( &robot_nrf ) )
+//        {
+//            nrf24_read_message(&robot_nrf, nrf_input_data, 6);
+//            toggle_d4_led();
+//        }
     }
 }
 
@@ -100,6 +160,8 @@ uint32_t system_counter = 0;
 void SysTick_Handler()
 {
     system_counter += 1;
+    add_mistake_to_the_log(icm20600_get_raw_data(&robot_icm20600));
+
 
     if ( system_counter == SYSTICK_INTERRUPT_FREQUENCY / 2 )
     {

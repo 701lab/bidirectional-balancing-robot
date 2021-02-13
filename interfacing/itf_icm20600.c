@@ -13,7 +13,6 @@
 
 #include "itf_icm20600.h"
 
-
 /****************************************************************************************/
 /*                                                                                      */
 /*                            Static functions declarations                             */
@@ -92,7 +91,7 @@ static inline void setup_spi2()
     }
 
     // setup SPI2 as master with disabled hardware CS.
-    SPI2->CR1 |= SPI_CR1_SSM | SPI_CR1_SSI | (baud_rate << SPI_CR1_BR_Pos) | SPI_CR1_MSTR;
+    SPI2->CR1 |= SPI_CR1_SSM | SPI_CR1_SSI | (baud_rate << SPI_CR1_BR_Pos) | SPI_CR1_MSTR | SPI_CR1_CPOL | SPI_CR1_CPHA;
     SPI2->CR2 |= SPI_CR2_FRXTH;
     SPI2->CR1 |= SPI_CR1_SPE;
 }
