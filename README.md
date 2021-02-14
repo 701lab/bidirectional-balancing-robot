@@ -8,6 +8,9 @@ This project is not intended for use outside of the balancing robot developed in
 
 *bla-bla-bla
 
+### Как в двух словах происходит измерение для каждой платы
+
+![Иллюстрация к проекту](https://github.com/701lab/bidirectional-balancing-robot/blob/master/images/BR_base.jpg)
 
 
 
