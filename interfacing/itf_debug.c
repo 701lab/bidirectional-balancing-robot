@@ -44,7 +44,7 @@ uint32_t add_mistake_to_the_log(uint32_t mistake_code)
     }
 
     // Add mistake to the log.
-    mistakes_log[mistakes_log_pointer].mistake_code = (mistake_code & 0x7F); // to hide critical mistake flag. Critical mistakes should must be handled separately.
+    mistakes_log[mistakes_log_pointer].mistake_code = (mistake_code & 0x7FFF); // to hide critical mistake flag. Critical mistakes should must be handled separately.
 
     // Add logging time to the log if enabled.
 #ifdef MISTAKE_LOG_SHOULD_SAVE_TIME

@@ -182,14 +182,14 @@
 #define ICM20600_SMPLRT_DIV_Pos                     (0U)
 #define ICM20600_SMPLRT_DIV_Msk                     (uint8_t)(0xFF << ICM20600_SMPLRT_DIV_Pos)
 
-// COINFIG - 0x1A - RW
-#define ICM20600_COINFIG_DLPF_CFG_Pos               (0U)
-#define ICM20600_COINFIG_DLPF_CFG_Msk               (uint8_t)(0x07 << ICM20600_COINFIG_DLPF_CFG_Pos)
-#define ICM20600_COINFIG_EXT_SYNC_SET_Pos           (3U)
-#define ICM20600_COINFIG_EXT_SYNC_SET_Msk           (uint8_t)(0x07 << ICM20600_COINFIG_EXT_SYNC_SET_Pos)
-#define ICM20600_COINFIG_FIFO_MODE_Pos              (6U)
-#define ICM20600_COINFIG_FIFO_MODE_Msk              (uint8_t)(0x01 << CM20600_COINFIG_FIFO_MODE_Pos)
-#define ICM20600_COINFIG_FIFO_MODE                  CM20600_COINFIG_FIFO_MODE_Msk
+// CONFIG - 0x1A - RW
+#define ICM20600_CONFIG_DLPF_CFG_Pos               (0U)
+#define ICM20600_CONFIG_DLPF_CFG_Msk               (uint8_t)(0x07 << ICM20600_CONFIG_DLPF_CFG_Pos)
+#define ICM20600_CONFIG_EXT_SYNC_SET_Pos           (3U)
+#define ICM20600_CONFIG_EXT_SYNC_SET_Msk           (uint8_t)(0x07 << ICM20600_CONFIG_EXT_SYNC_SET_Pos)
+#define ICM20600_CONFIG_FIFO_MODE_Pos              (6U)
+#define ICM20600_CONFIG_FIFO_MODE_Msk              (uint8_t)(0x01 << CM20600_CONFIG_FIFO_MODE_Pos)
+#define ICM20600_CONFIG_FIFO_MODE                  CM20600_CONFIG_FIFO_MODE_Msk
 
 
 // GYRO_CONFIG - 0x1B - RW

@@ -27,9 +27,9 @@ void setup_device(void)
     setup_nrf24l01p_peripherals();
     setup_icm20600_peripherals();
 
-    dummy_delay(200000);
+    delay_in_milliseconds(100);
 
-//    setup_system_timer();
+    // setup_system_timer();
 
     // @todo Add some kind of control loop zeroing.
     // @todo write the code to init slave devices.
@@ -40,3 +40,39 @@ void dummy_delay(uint32_t duration)
 {
     for(uint32_t i = 0; i < duration; ++i){}
 }
+
+void calibrate_icm20600_gyro( icm20600 *icm_instance, uint8_t calibration_coef, uint32_t cycle_length )
+{
+    uint32_t number_of_measurements = 1 << calibration_coef;
+    int32_t calibration_array[3] = { 0, 0, 0 };
+
+    if ( icm_instance->gyro_calibration_coefficients[0] != 0 || icm_instance->gyro_calibration_coefficients[1] != 0
+         || icm_instance->gyro_calibration_coefficients[2] != 0 )
+    {
+        icm_instance->gyro_calibration_coefficients[0] = 0;
+        icm_instance->gyro_calibration_coefficients[1] = 0;
+        icm_instance->gyro_calibration_coefficients[2] = 0;
+        icm20600_set_calibration_values( icm_instance );
+    }
+
+    for ( int32_t i = 0; i < number_of_measurements; ++i )
+    {
+        delay_in_milliseconds( cycle_length );
+        icm20600_get_raw_data( icm_instance );
+        toggle_d4_led();
+        calibration_array[icm_x_axis_index] -= icm_instance->raw_data[icm_gyro_x_index];
+        calibration_array[icm_y_axis_index] -= icm_instance->raw_data[icm_gyro_y_index];
+        calibration_array[icm_z_axis_index] -= icm_instance->raw_data[icm_gyro_z_index];
+    }
+
+    icm_instance->gyro_calibration_coefficients[icm_x_axis_index] = calibration_array[icm_x_axis_index] >> calibration_coef;
+    icm_instance->gyro_calibration_coefficients[icm_y_axis_index] = calibration_array[icm_y_axis_index] >> calibration_coef;
+    icm_instance->gyro_calibration_coefficients[icm_z_axis_index] = calibration_array[icm_z_axis_index] >> calibration_coef;
+    icm20600_set_calibration_values( icm_instance );
+}
+
+
+
+
+
+// EOF

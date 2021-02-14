@@ -5,6 +5,12 @@
 #define DECLARE_GLOBAL_VARIABLES
 #include "device.h"
 
+#define BOARD_1
+//#define BOARD_2
+
+
+
+
 void encode_float_variable(float value_to_encode,  uint8_t array_to_store_result[]);
 float decode_float_variable(uint8_t array_with_value[]);
 
@@ -21,7 +27,7 @@ nrf24l01p robot_nrf = {
                         .csn_high = nrf24_set_cs_high,
                         .csn_low = nrf24_set_cs_low,
 
-                        .frequency_channel = 45,
+                        .frequency_channel = 90,
                         .power_output = nrf24_pa_max,
                         .data_rate = nrf24_250_kbps,
 
@@ -39,8 +45,16 @@ icm20600 robot_icm20600 =
                             .set_cs_high = set_icm20600_cs_high,
                             .set_cs_low = set_icm20600_cs_low,
 
-                            .gyro_scale_setup = icm_gyro_500dps_scale,
+                            .gyro_averaging_setup = icm_gyro_4_samples_averaging,
+                            .gyro_filter_bw = icm_gyro_92_hz,
+                            .gyro_scale_setup = icm_gyro_1000dps_scale,
+
+                            .accel_averaging_setup = icm_accel_4_samples_averaging,
+                            .accel_filter_bw = icm_accel_99_hz,
                             .accel_scale_setup = icm_accel_2g_scale,
+
+                            .sample_rate_divider = 7,
+
                             .complementary_filter_coef = 0.1f,
                             .enable_temperature_sensor = 0,
 
@@ -102,25 +116,25 @@ int main( void )
     add_mistake_to_the_log( nrf24_rx_mode( &robot_nrf ) );
 
     add_mistake_to_the_log( icm20600_reset_all_registeres( &robot_icm20600 ) );
-    dummy_delay( 10000 ); // without this delay registers won't reset.
+    delay_in_milliseconds(5);
     add_mistake_to_the_log( icm20600_init( &robot_icm20600 ) );
 
 //    add_mistake_to_the_log( icm20600_disable_one_accel_channel( &robot_icm20600, icm_x_axis_index ) );
 //    add_mistake_to_the_log( icm20600_disable_one_gyro_channel( &robot_icm20600, icm_x_axis_index ) );
 
-//    add_mistake_to_the_log(icm20600_disable_gyro(&robot_icm20600));
+//    add_mistake_to_the_loglo(icm20600_disable_gyro(&robot_icm20600));
 //    add_mistake_to_the_log(icm20600_disable_accel(&robot_icm20600));
 
+    calibrate_icm20600_gyro(&robot_icm20600, 10, 20);
 
     setup_system_timer();
 
     motor1.enable();
     motor2.enable();
 
-    dummy_delay(10000);
-
     while ( 1 )
     {
+
 //        for ( int32_t i = 0; i <= PWM_PRECISION; ++i )
 //        {
 //            motor1.set_pwm_duty_cycle(i);

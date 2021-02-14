@@ -30,4 +30,6 @@ void setup_device(void);
 
 void dummy_delay(uint32_t duration);
 
+void calibrate_icm20600_gyro( icm20600 *icm_instance, uint8_t calibration_coef, uint32_t cycle_length );
+
 #endif /* DEVICE_H_ */

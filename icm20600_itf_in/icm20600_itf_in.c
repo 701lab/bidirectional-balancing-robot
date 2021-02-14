@@ -29,6 +29,11 @@ static void icm_reset_all_registers( icm20600 *icm_instance );
 
 static void icm_reset_variable_parameters( icm20600 *icm_instance );
 
+static uint16_t icm_check_gyro_parameters( icm20600 *icm_instance );
+static uint16_t icm_check_accel_parameters( icm20600 *icm_instance );
+static uint16_t icm_setup_gyro_and_accel( icm20600 *icm_instance );
+static void icm_wakeup( icm20600 *icm_instance );
+
 /****************************************************************************************/
 /*                                                                                      */
 /*                          Static functions implementations                            */
@@ -116,42 +121,42 @@ static uint16_t icm20600_check_parameters( icm20600 *icm_instance )
     if ( icm_instance->gyro_scale_setup > icm_gyro_2000dps_scale )
     {
         icm_instance->gyro_scale_setup = icm_gyro_2000dps_scale;
-        return ICM20600_WRONG_GYROSCOPE_SCALE_Err;
+        return ICM20600_WRONG_GYRO_SCALE_Err;
     }
     if ( icm_instance->gyro_scale_setup < icm_gyro_250dps_scale )
     {
         icm_instance->gyro_scale_setup = icm_gyro_250dps_scale;
-        return ICM20600_WRONG_GYROSCOPE_SCALE_Err;
+        return ICM20600_WRONG_GYRO_SCALE_Err;
     }
 
     if ( icm_instance->accel_scale_setup > icm_accel_16g_scale )
     {
         icm_instance->accel_scale_setup = icm_accel_16g_scale;
-        return ICM20600_WRONG_ACCELEROMETER_SCALE_Err;
+        return ICM20600_WRONG_ACCEL_SCALE_Err;
     }
     if ( icm_instance->accel_scale_setup < icm_accel_2g_scale )
     {
         icm_instance->accel_scale_setup = icm_accel_2g_scale;
-        return ICM20600_WRONG_ACCELEROMETER_SCALE_Err;
+        return ICM20600_WRONG_ACCEL_SCALE_Err;
     }
 
     return 0;
 }
-uint8_t answer_here = 0;
 
+//! It is super important to make a delay for at least 10ms after this function, so that icm20600 will be able to reset all registers.
 static void icm_reset_all_registers( icm20600 *icm_instance )
 {
-    answer_here = icm_read_register( icm_instance, ICM20600_PWR_MGMT_1 );
+    uint8_t answer = icm_read_register( icm_instance, ICM20600_PWR_MGMT_1 );
 
-    answer_here |= ICM20600_PWR_MGMT_1_DEVICE_RESET;
+    answer |= ICM20600_PWR_MGMT_1_DEVICE_RESET;
 
-    icm_write_register( icm_instance, ICM20600_PWR_MGMT_1, answer_here );
+    icm_write_register( icm_instance, ICM20600_PWR_MGMT_1, answer );
 
-    answer_here = icm_read_register( icm_instance, ICM20600_PWR_MGMT_1 );
+    answer = icm_read_register( icm_instance, ICM20600_PWR_MGMT_1 );
 
-    while ( answer_here & ICM20600_PWR_MGMT_1_DEVICE_RESET )
+    while ( answer & ICM20600_PWR_MGMT_1_DEVICE_RESET )
     {
-        answer_here = icm_read_register( icm_instance, ICM20600_PWR_MGMT_1 );
+        answer = icm_read_register( icm_instance, ICM20600_PWR_MGMT_1 );
     }
 }
 
@@ -168,6 +173,124 @@ static void icm_reset_variable_parameters( icm20600 *icm_instance )
     icm_instance->raw_data[icm_accel_y_index] = 0;
     icm_instance->raw_data[icm_accel_z_index] = 0;
     icm_instance->raw_data[icm_temperature_index] = 0;
+}
+
+static uint16_t icm_check_gyro_parameters( icm20600 *icm_instance )
+{
+    uint16_t error_code = 0;
+
+    if (icm_instance->gyro_averaging_setup > icm_gyro_128_samples_averaging )
+    {
+        icm_instance->gyro_averaging_setup = icm_gyro_128_samples_averaging;
+        error_code = ICM20600_WRONG_GYRO_AVERAGING_Err;
+    }
+    if(icm_instance->gyro_averaging_setup < icm_gyro_1_sample_averaging )
+    {
+        icm_instance->gyro_averaging_setup = icm_gyro_1_sample_averaging;
+        error_code = ICM20600_WRONG_GYRO_AVERAGING_Err;
+    }
+
+    if(icm_instance->gyro_filter_bw > icm_gyro_5_hz)
+    {
+        icm_instance->gyro_filter_bw = icm_gyro_5_hz;
+        error_code = ICM20600_WRONG_GYRO_FILTER_BW_Err;
+    }
+    if(icm_instance->gyro_filter_bw < icm_gyro_250_hz)
+    {
+        icm_instance->gyro_filter_bw = icm_gyro_250_hz;
+        error_code = ICM20600_WRONG_GYRO_FILTER_BW_Err;
+    }
+
+    if(icm_instance->gyro_scale_setup > icm_gyro_2000dps_scale)
+    {
+        icm_instance->gyro_scale_setup = icm_gyro_2000dps_scale;
+        error_code = ICM20600_WRONG_GYRO_SCALE_Err;
+    }
+    if(icm_instance->gyro_scale_setup < icm_gyro_250dps_scale)
+    {
+        icm_instance->gyro_scale_setup = icm_gyro_250dps_scale;
+        error_code = ICM20600_WRONG_GYRO_SCALE_Err;
+    }
+
+    return error_code;
+}
+
+static uint16_t icm_check_accel_parameters( icm20600 *icm_instance )
+{
+    uint16_t error_code = 0;
+
+    if(icm_instance->accel_averaging_setup > icm_accel_32_samples_averaging)
+    {
+        icm_instance->accel_averaging_setup = icm_accel_32_samples_averaging;
+        error_code = ICM20600_WRONG_ACCEL_AVERAGING_Err;
+    }
+    if(icm_instance->accel_averaging_setup < icm_accel_4_samples_averaging)
+    {
+        icm_instance->accel_averaging_setup = icm_accel_4_samples_averaging;
+        error_code = ICM20600_WRONG_ACCEL_AVERAGING_Err;
+    }
+
+    if(icm_instance->accel_filter_bw > icm_accel_5_hz)
+    {
+        icm_instance->accel_filter_bw = icm_accel_5_hz;
+        error_code = ICM20600_WRONG_ACCEL_FILTER_BW_Err;
+    }
+    if(icm_instance->accel_filter_bw < icm_accel_218_hz)
+    {
+        icm_instance->accel_filter_bw = icm_accel_218_hz;
+        error_code = ICM20600_WRONG_ACCEL_FILTER_BW_Err;
+    }
+
+    if(icm_instance->accel_scale_setup > icm_accel_16g_scale)
+    {
+        icm_instance->accel_scale_setup = icm_accel_16g_scale;
+        error_code = ICM20600_WRONG_ACCEL_SCALE_Err;
+    }
+    if(icm_instance->accel_scale_setup < icm_accel_2g_scale)
+    {
+        icm_instance->accel_scale_setup = icm_accel_2g_scale;
+        error_code = ICM20600_WRONG_ACCEL_SCALE_Err;
+    }
+
+    return error_code;
+}
+
+static uint16_t icm_setup_gyro_and_accel( icm20600 *icm_instance )
+{
+    uint16_t error_code = icm_check_gyro_parameters( icm_instance );
+
+    if ( error_code == 0 )
+    {
+        error_code = icm_check_accel_parameters( icm_instance );
+    }
+
+    icm_start_writing_sequence(icm_instance, ICM20600_SMPLRT_DIV, icm_instance->sample_rate_divider); // SMPLRT_DIV setup;
+    icm_write_next_sequenced_byte( icm_instance, icm_instance->gyro_filter_bw << ICM20600_CONFIG_DLPF_CFG_Pos ); // CONFIG setup.
+    icm_write_next_sequenced_byte( icm_instance, icm_instance->gyro_scale_setup << ICM20600_GYRO_CONFIG_FS_SEL_Pos ); // GYRO_CONFIG setup.
+    icm_write_next_sequenced_byte( icm_instance, icm_instance->accel_scale_setup << ICM20600_ACCEL_CONFIG_ACCEL_FS_SEL_Pos ); // ACCEL_CONFIG setup.
+
+    uint8_t icm20600_accel_congig2_setup = icm_instance->accel_averaging_setup << ICM20600_ACCEL_CONFIG2_DEC2_CFG_Pos
+                                           | icm_instance->accel_filter_bw << ICM20600_ACCEL_CONFIG2_A_DLPF_CFG_Pos;
+    icm_write_next_sequenced_byte( icm_instance, icm20600_accel_congig2_setup ); // ACCEL_CONFIG2 setup.
+
+    icm_finish_writing_sequence(icm_instance, icm_instance->gyro_averaging_setup << ICM20600_LP_MODE_CFG_G_AVGCFG_Pos); // LP_MODE_CFG setup.
+
+    return error_code;
+}
+
+
+
+//! Resets sleep bit to zero and disables temperature sensor if needed.
+static void icm_wakeup(icm20600 *icm_instance)
+{
+    if ( icm_instance->enable_temperature_sensor )
+    {
+        icm_write_register(icm_instance, ICM20600_PWR_MGMT_1, 1 << ICM20600_PWR_MGMT_1_CLKSEL_Pos);
+    }
+    else
+    {
+        icm_write_register(icm_instance, ICM20600_PWR_MGMT_1, ICM20600_PWR_MGMT_1_TEMP_DIS | 1 << ICM20600_PWR_MGMT_1_CLKSEL_Pos);
+    }
 }
 
 /****************************************************************************************/
@@ -199,21 +322,13 @@ uint16_t icm20600_init(icm20600 *icm_instance)
     error_code = icm20600_check_parameters( icm_instance ); // All possible mistakes are tolerable, so there is no need to return immediately.
 
     icm_write_register( icm_instance, ICM20600_I2C_IF, ICM20600_I2C_IF_I2C_IF_DIS ); // Disable I2C
+    error_code = icm_setup_gyro_and_accel(icm_instance);
 
-    // Setup gyro and accel scales
-    icm_start_writing_sequence( icm_instance, ICM20600_GYRO_CONFIG, icm_instance->gyro_scale_setup << ICM20600_GYRO_CONFIG_FS_SEL_Pos );
-    icm_finish_writing_sequence( icm_instance, icm_instance->accel_scale_setup << ICM20600_ACCEL_CONFIG_ACCEL_FS_SEL_Pos );
+    icm_wakeup(icm_instance);
 
-    if ( icm_instance->enable_temperature_sensor )
-    {
-        icm_write_register(icm_instance, ICM20600_PWR_MGMT_1, 1 << ICM20600_PWR_MGMT_1_CLKSEL_Pos);
-    }
-    else
-    {
-        icm_write_register(icm_instance, ICM20600_PWR_MGMT_1, ICM20600_PWR_MGMT_1_TEMP_DIS | 1 << ICM20600_PWR_MGMT_1_CLKSEL_Pos);
-    }
+    icm_reset_variable_parameters(icm_instance); // In case user understood something wrong.
+    icm20600_set_calibration_values(icm_instance);
 
-    icm_reset_variable_parameters(icm_instance); //
     icm_instance->was_initialized = 1;
     return error_code;
 }
@@ -241,7 +356,7 @@ uint16_t icm20600_reset_all_registeres( icm20600 *icm_instance )
 
 uint16_t icm20600_disable_gyro( icm20600 *icm_instance )
 {
-    if (icm_instance->was_initialized == 0 )
+    if ( icm_instance->was_initialized == 0 )
     {
         return ICM20600_WAS_NOT_INITIALIZED_Err;
     }
@@ -257,7 +372,7 @@ uint16_t icm20600_disable_gyro( icm20600 *icm_instance )
 
 uint16_t icm20600_disable_accel( icm20600 *icm_instance )
 {
-    if (icm_instance->was_initialized == 0 )
+    if ( icm_instance->was_initialized == 0 )
     {
         return ICM20600_WAS_NOT_INITIALIZED_Err;
     }
@@ -273,42 +388,62 @@ uint16_t icm20600_disable_accel( icm20600 *icm_instance )
 
 uint16_t icm20600_disable_one_gyro_channel( icm20600 *icm_instance, icm_axes_indexes channel_index )
 {
-    if (icm_instance->was_initialized == 0)
+    if ( icm_instance->was_initialized == 0 )
     {
         return ICM20600_WAS_NOT_INITIALIZED_Err;
     }
 
-    if(channel_index < icm_x_axis_index || channel_index > icm_z_axis_index)
+    if ( channel_index < icm_x_axis_index || channel_index > icm_z_axis_index )
     {
-        return ICM20600_WRONG_GYROSCOPE_INDEX_Err;
+        return ICM20600_WRONG_GYRO_INDEX_Err;
     }
 
-    uint8_t answer = icm_read_register(icm_instance, ICM20600_PWR_MGMT_2);
+    uint8_t answer = icm_read_register( icm_instance, ICM20600_PWR_MGMT_2 );
 
     answer |= 1 << (2 - (uint8_t)(channel_index));
-
-    icm_write_register(icm_instance, ICM20600_PWR_MGMT_2, answer);
+    icm_write_register( icm_instance, ICM20600_PWR_MGMT_2, answer );
 
     return 0;
 }
 
 uint16_t icm20600_disable_one_accel_channel( icm20600 *icm_instance, icm_axes_indexes channel_index)
 {
-    if (icm_instance->was_initialized == 0)
+    if ( icm_instance->was_initialized == 0 )
     {
         return ICM20600_WAS_NOT_INITIALIZED_Err;
     }
 
-    if(channel_index < icm_x_axis_index || channel_index > icm_z_axis_index)
+    if ( channel_index < icm_x_axis_index || channel_index > icm_z_axis_index )
     {
-        return ICM20600_WRONG_ACCELEROMETER_INDEX_Err;
+        return ICM20600_WRONG_ACCEL_INDEX_Err;
     }
 
-    uint8_t answer = icm_read_register(icm_instance, ICM20600_PWR_MGMT_2);
+    uint8_t answer = icm_read_register( icm_instance, ICM20600_PWR_MGMT_2 );
 
     answer |= 1 << (5 - (uint8_t)(channel_index));
+    icm_write_register( icm_instance, ICM20600_PWR_MGMT_2, answer );
 
-    icm_write_register(icm_instance, ICM20600_PWR_MGMT_2, answer);
+    return 0;
+}
+
+uint16_t icm20600_set_calibration_values( icm20600 *icm_instance )
+{
+    if (icm_instance->was_initialized == 0 )
+    {
+        return ICM20600_WAS_NOT_INITIALIZED_Err;
+    }
+
+    // Set gyro x axis calibration coefficient.
+    icm_start_writing_sequence( icm_instance, ICM20600_XG_OFFS_USRH, (icm_instance->gyro_calibration_coefficients[icm_x_axis_index] >> 8) & 0xFF );
+    icm_write_next_sequenced_byte( icm_instance, icm_instance->gyro_calibration_coefficients[icm_x_axis_index] & 0xFF );
+
+    // Set gyto y axis calibratiiin coefficient.
+    icm_write_next_sequenced_byte( icm_instance, (icm_instance->gyro_calibration_coefficients[icm_y_axis_index] >> 8) & 0xFF );
+    icm_write_next_sequenced_byte( icm_instance, icm_instance->gyro_calibration_coefficients[icm_y_axis_index] & 0xFF );
+
+    // Set gyto z axis calibratiiin coefficient.
+    icm_write_next_sequenced_byte( icm_instance, (icm_instance->gyro_calibration_coefficients[icm_z_axis_index] >> 8) & 0xFF );
+    icm_finish_writing_sequence( icm_instance, icm_instance->gyro_calibration_coefficients[icm_z_axis_index] & 0xFF );
 
     return 0;
 }
@@ -368,7 +503,25 @@ uint16_t icm20600_get_raw_data(icm20600 *icm_instance)
 
 
 
-uint16_t icm20600_procces_raw_data(icm20600 *icm_instance, float * processed_output_array)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+uint16_t icm20600_procces_raw_data(icm20600 *icm_instance, float *processed_output_array)
 {
     if (icm_instance->was_initialized == 0)
     {
@@ -398,17 +551,17 @@ uint16_t icm20600_procces_raw_data(icm20600 *icm_instance, float * processed_out
         float gyro_sensitivity = icm20600_GYRO_BASIC_SENSITIVITY/gyro_divider;
         float accel_sensitivity = (uint32_t)(icm20600_ACC_BASIC_SENSITIVITY >> (icm_instance->accel_scale_setup));    // Will be the same value for the 2g setup and twice as big for every next one
 
-        processed_output_array[icm_accel_x_index] = (float)(raw_input_array[icm_accel_x_index]) / accel_sensitivity;
-        processed_output_array[icm_accel_y_index] = (float)(raw_input_array[icm_accel_y_index]) / accel_sensitivity;
-        processed_output_array[icm_accel_z_index] = (float)(raw_input_array[icm_accel_z_index]) / accel_sensitivity;
+        processed_output_array[icm_accel_x_index] = (float)(icm_instance->raw_data[icm_accel_x_index]) / accel_sensitivity;
+        processed_output_array[icm_accel_y_index] = (float)(icm_instance->raw_data[icm_accel_y_index]) / accel_sensitivity;
+        processed_output_array[icm_accel_z_index] = (float)(icm_instance->raw_data[icm_accel_z_index]) / accel_sensitivity;
 
-        processed_output_array[icm_gyro_x_index] = (float)(raw_input_array[icm_gyro_x_index]) / gyro_sensitivity;
-        processed_output_array[icm_gyro_y_index] = (float)(raw_input_array[icm_gyro_y_index]) / gyro_sensitivity;
-        processed_output_array[icm_gyro_z_index] = (float)(raw_input_array[icm_gyro_z_index]) / gyro_sensitivity;
+        processed_output_array[icm_gyro_x_index] = (float)(icm_instance->raw_data[icm_gyro_x_index]) / gyro_sensitivity;
+        processed_output_array[icm_gyro_y_index] = (float)(icm_instance->raw_data[icm_gyro_y_index]) / gyro_sensitivity;
+        processed_output_array[icm_gyro_z_index] = (float)(icm_instance->raw_data[icm_gyro_z_index]) / gyro_sensitivity;
 
         if ( icm_instance->enable_temperature_sensor )
         {
-            processed_output_array[icm_temperature_index] = (float)(raw_input_array[icm_temperature_index]) / icm20600_TEMPERATURE_SENSITIVITY + icm20600_TEMPERATURE_OFFSET;
+            processed_output_array[icm_temperature_index] = (float)(icm_instance->raw_data[icm_temperature_index]) / icm20600_TEMPERATURE_SENSITIVITY + icm20600_TEMPERATURE_OFFSET;
         }
 
         return 0;

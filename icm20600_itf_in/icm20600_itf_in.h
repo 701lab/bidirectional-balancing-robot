@@ -75,11 +75,11 @@ typedef enum icm_accel_averaging_filter_setup
 {
     icm_accel_4_samples_averaging = 0,
     icm_accel_8_samples_averaging = 1,
-    icm_accel_16_sample_averaging = 2,
-    icm_accel_32_sample_averaging = 3,
+    icm_accel_16_samples_averaging = 2,
+    icm_accel_32_samples_averaging = 3,
 } icm_accel_averaging_filter_setup;
 
-typedef enum icm_gyro_averaging_filter_stup
+typedef enum icm_gyro_averaging_filter_setup
 {
     icm_gyro_1_sample_averaging = 0,
     icm_gyro_2_samples_averaging = 1,
@@ -89,7 +89,7 @@ typedef enum icm_gyro_averaging_filter_stup
     icm_gyro_32_samples_averaging = 5,
     icm_gyro_64_samples_averaging = 6,
     icm_gyro_128_samples_averaging = 7,
-} icm_gyro_averaging_filter_stup;
+} icm_gyro_averaging_filter_setup;
 
 /****************************************************************************************/
 /*                                                                                      */
@@ -111,25 +111,24 @@ typedef struct{
     const uint8_t (*spi_write_byte)(uint8_t byte_to_be_sent);
 
     float previous_gyro_values[3];
-//    float previous_gyro_x;
-//    float previous_gyro_y;
-//    float previous_gyro_z;
+    float complementary_filter_coef; // Maybe make sense to change for an array.
 
-    float complementary_filter_coef;
+    icm_gyro_scale_variants gyro_scale_setup;
+    icm_gyro_filter_bandwidth gyro_filter_bw; // filter bandwidth
+    icm_gyro_averaging_filter_setup gyro_averaging_setup;
+
+    icm_accel_scale_variants accel_scale_setup;
+    icm_accel_filter_bandwidth accel_filter_bw;
+    icm_accel_averaging_filter_setup accel_averaging_setup;
 
     int16_t raw_data[7];
     int16_t gyro_calibration_coefficients[3];
 
-//    uint8_t gyro_
-    uint8_t gyro_scale_setup;
-    uint8_t accel_scale_setup;
-    uint8_t gyro_filter_bw; // filter bandwidth
     uint8_t sample_rate_divider; // output data rate = 1000/ (sample_rate_divider + 1)
+    uint8_t enable_temperature_sensor; // 1 or 0
 
     uint8_t was_initialized;
 
-    // Enables temperature sensor if 1
-    uint8_t enable_temperature_sensor;
 } icm20600;
 
 /****************************************************************************************/
@@ -148,6 +147,8 @@ uint16_t icm20600_disable_accel( icm20600 *icm_instance ); // [V]
 uint16_t icm20600_disable_one_gyro_channel( icm20600 *icm_instance, icm_axes_indexes channel_index ); // [V]
 uint16_t icm20600_disable_one_accel_channel( icm20600 *icm_instance, icm_axes_indexes channel_index ); // [V]
 
+uint16_t icm20600_set_calibration_values( icm20600 *icm_instance );
+
 /****************************************************************************************/
 /*                                                                                      */
 /*                              Testing and calibrations                                */
@@ -164,7 +165,7 @@ uint16_t icm20600_check_if_alive( icm20600 *icm_instance ); // [V]
 
 uint16_t icm20600_get_raw_data( icm20600 *icm_instance ); // [V]
 
-uint16_t icm20600_procces_raw_data( icm20600 *icm_instance, int16_t *raw_input_array, float *processed_output_array );
+uint16_t icm20600_procces_raw_data( icm20600 *icm_instance, float *processed_output_array );
 
 uint16_t icm20600_get_proccesed_data( icm20600 *icm_instance, float *processed_output_array );
 
@@ -181,7 +182,6 @@ uint32_t icm20600_calculate_all_angles( icm20600 *icm_instance, float angles_sto
 uint32_t icm20600_calculate_z_x_angle( icm20600 *icm_instance, float *calculated_angle, float integration_period );
 uint32_t icm20600_calculate_y_z_angle( icm20600 *icm_instance, float *calculated_angle, float integration_period );
 uint32_t icm20600_calculate_x_y_angle( icm20600 *icm_instance, float *calculated_angle, float integration_period );
-
 
 
 /****************************************************************************************/

@@ -158,6 +158,7 @@ typedef struct
      *      update event is called to update timer parameters thus interrupt is called and at time 0 value will be incremented by 1, so it will start from 0.
      */
     _DECL uint32_t seconds_from_setup _INIT((uint32_t)(-1));
+    _DECL uint32_t delay_is_finished _INIT(0);
 
 #endif /* DEFINE_GLOBAL_VARIABLES */
 

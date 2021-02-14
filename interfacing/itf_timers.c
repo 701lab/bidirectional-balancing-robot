@@ -11,7 +11,7 @@
  */
 
 /*!
- * @brief Set up timer 6 as milliseconds counter.
+ * @brief Set up timer 6 as milliseconds counter and timer 7 as delay timer.
  *
  * The timer will count milliseсonds. Resets every second and call interrupt, that updates seconds counter, represented by a global variable.
  *
@@ -20,10 +20,10 @@
 void setup_timers( void )
 {
     // Enable timers clocking.
-    RCC->APB1ENR1 |= RCC_APB1ENR1_TIM6EN;
+    RCC->APB1ENR1 |= RCC_APB1ENR1_TIM6EN | RCC_APB1ENR1_TIM7EN;
 
     // Set up prescaler and reload to count exactly 1000 pulses every second and overflow every second.
-    TIM6->PSC |= (uint32_t)((SYSTEM_MAIN_FREQUENCY / 1000) - 1);
+    TIM6->PSC |= (uint16_t)((SYSTEM_MAIN_FREQUENCY / 1000) - 1);
     TIM6->ARR = 1000 - 1;
 
     //Enable interrupt on update event.
@@ -34,6 +34,13 @@ void setup_timers( void )
     // Generate update event to enable new register values and start timer.
     TIM6->EGR |= TIM_EGR_UG;
     TIM6->CR1 |= TIM_CR1_CEN;
+
+    // Timer7 setup.
+    TIM7->PSC |= (uint16_t)(SYSTEM_MAIN_FREQUENCY / 1000 - 1);  // One millisecond step
+    TIM7->CNT = 0;         // Clear counter before start
+    TIM7->DIER |= TIM_DIER_UIE;
+    NVIC_EnableIRQ(TIM7_DAC_IRQn);
+    TIM17->CR1 |= TIM_CR1_OPM;  // One pulse mode. Counter don't need to be started
 }
 
 /*!
@@ -47,6 +54,21 @@ void TIM6_DACUNDER_IRQHandler()
     // Update minutes value.
     seconds_from_setup += 1;
 }
+
+void TIM7_IRQHandler()
+{
+    TIM7->SR &= ~TIM_SR_UIF;
+    delay_is_finished = 1;
+}
+
+void delay_in_milliseconds( const uint16_t time_in_millisecond )
+{
+    TIM7->ARR = time_in_millisecond - 1;
+    TIM7->CR1 |= TIM_CR1_CEN;
+    delay_is_finished = 0;
+    while ( delay_is_finished == 0 ) {}
+}
+
 
 /*!
  * @brief Sets up SysTick timer interrupt with respect to the main system frequency.
