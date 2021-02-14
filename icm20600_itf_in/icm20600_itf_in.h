@@ -124,6 +124,7 @@ typedef struct{
     int16_t raw_data[7];
     int16_t gyro_calibration_coefficients[3];
 
+    uint8_t gyro_faults[3];
     uint8_t sample_rate_divider; // output data rate = 1000/ (sample_rate_divider + 1)
     uint8_t enable_temperature_sensor; // 1 or 0
 
@@ -165,24 +166,7 @@ uint16_t icm20600_check_if_alive( icm20600 *icm_instance ); // [V]
 
 uint16_t icm20600_get_raw_data( icm20600 *icm_instance ); // [V]
 
-uint16_t icm20600_procces_raw_data( icm20600 *icm_instance, float *processed_output_array );
-
-uint16_t icm20600_get_proccesed_data( icm20600 *icm_instance, float *processed_output_array );
-
-/****************************************************************************************/
-/*                                                                                      */
-/*                                  ?????????????????                                   */
-/*                                                                                      */
-/****************************************************************************************/
-
-// Должны будут в дальнейшем быть пересмотрены и по возможности улучшены
-uint32_t icm20600_calculate_all_angles( icm20600 *icm_instance, float angles_storage[3], float integration_period );
-
-// Вычисляет только нужный угол из трех. Может вызываться без вызова каких либо других функций, так как будет считывать значения датчика самостоятельно
-uint32_t icm20600_calculate_z_x_angle( icm20600 *icm_instance, float *calculated_angle, float integration_period );
-uint32_t icm20600_calculate_y_z_angle( icm20600 *icm_instance, float *calculated_angle, float integration_period );
-uint32_t icm20600_calculate_x_y_angle( icm20600 *icm_instance, float *calculated_angle, float integration_period );
-
+uint16_t icm20600_process_raw_data( icm20600 *icm_instance, float *processed_output_array );
 
 /****************************************************************************************/
 /*                                                                                      */
@@ -195,11 +179,8 @@ uint32_t icm20600_calculate_x_y_angle( icm20600 *icm_instance, float *calculated
 
 #define icm20600_ACC_BASIC_SENSITIVITY              (16384)       // 2^16/4 where 4 in g - full scale of +-2g accelerometer setup - the most precise one. All other scales can be based on this one.
 
-#define icm20600_TEMPERATURE_SENSITIVITY            (340.0f)
-#define icm20600_TEMPERATURE_OFFSET                 (36.53f)      // in degrees Celsius
-
-
-
+#define ICM20600_TEMPERATURE_SENSITIVITY            (340.0f)
+#define ICM20600_TEMPERATURE_OFFSET                 (36.53f)      // in degrees Celsius
 
 
 #endif /* ICM20600_ITF_IN_H_ */

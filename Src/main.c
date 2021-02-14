@@ -45,7 +45,8 @@ icm20600 robot_icm20600 =
                             .set_cs_high = set_icm20600_cs_high,
                             .set_cs_low = set_icm20600_cs_low,
 
-                            .gyro_averaging_setup = icm_gyro_4_samples_averaging,
+//                            .gyro_averaging_setup = icm_gyro_1_sample_averaging,
+                            .gyro_averaging_setup = icm_gyro_8_samples_averaging,
                             .gyro_filter_bw = icm_gyro_92_hz,
                             .gyro_scale_setup = icm_gyro_1000dps_scale,
 
@@ -59,11 +60,20 @@ icm20600 robot_icm20600 =
                             .enable_temperature_sensor = 0,
 
                             .raw_data = { 0, 0, 0, 0, 0, 0, 0 },
-                            .gyro_calibration_coefficients = { 0, 0, 0 },
                             .previous_gyro_values = { 0, 0, 0 },
+
+#ifdef BOARD_1
+//                            .gyro_calibration_coefficients = { 0, 0, 0 },
+                            .gyro_calibration_coefficients = { 104, -62, 5 },
+#endif
+#ifdef BOARD_2
+                            .gyro_calibration_coefficients = { 0, 0, 0 },
+#endif
 
                             .was_initialized = 0
                           };
+
+float icm_processed_data[7] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 
 motor motor1 =
                {
@@ -76,8 +86,6 @@ motor motor1 =
                  .max_duty_cycle = PWM_PRECISION,
                };
 
-
-
 motor motor2 =
                {
                  .disable = set_drv8701_enable_low,
@@ -89,6 +97,17 @@ motor motor2 =
                  .max_duty_cycle = PWM_PRECISION,
                };
 
+/****************************************************************************************/
+/*                                                                                      */
+/*                               Control loop parameters                                */
+/*                                                                                      */
+/****************************************************************************************/
+
+float robot_measured_angle = 0.0f;
+float robot_measured_angle_2 = 0.0f;
+float gyro_angle_integral = 0.0f;
+float accel_measured_angle = 0.0f;
+float accel_buffer[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 
 // ****** Motor  initialization ****** //
 //motor1.speed_controller = &motor1_speed_cotroller;
@@ -116,16 +135,16 @@ int main( void )
     add_mistake_to_the_log( nrf24_rx_mode( &robot_nrf ) );
 
     add_mistake_to_the_log( icm20600_reset_all_registeres( &robot_icm20600 ) );
-    delay_in_milliseconds(5);
+    delay_in_milliseconds(10);
     add_mistake_to_the_log( icm20600_init( &robot_icm20600 ) );
+    robot_measured_angle = calculate_base_angle(&robot_icm20600, 20);
+    gyro_angle_integral = robot_measured_angle;
+
 
 //    add_mistake_to_the_log( icm20600_disable_one_accel_channel( &robot_icm20600, icm_x_axis_index ) );
 //    add_mistake_to_the_log( icm20600_disable_one_gyro_channel( &robot_icm20600, icm_x_axis_index ) );
 
-//    add_mistake_to_the_loglo(icm20600_disable_gyro(&robot_icm20600));
-//    add_mistake_to_the_log(icm20600_disable_accel(&robot_icm20600));
-
-    calibrate_icm20600_gyro(&robot_icm20600, 10, 20);
+//    calibrate_icm20600_gyro(&robot_icm20600, 10, 20);
 
     setup_system_timer();
 
@@ -174,14 +193,19 @@ uint32_t system_counter = 0;
 void SysTick_Handler()
 {
     system_counter += 1;
-    add_mistake_to_the_log(icm20600_get_raw_data(&robot_icm20600));
-
+    add_mistake_to_the_log( icm20600_get_raw_data( &robot_icm20600 ) );
+    add_mistake_to_the_log( icm20600_process_raw_data( &robot_icm20600, icm_processed_data ) );
+    calculate_x_angle( &robot_icm20600, icm_processed_data, &robot_measured_angle , 1.0f / (float)(SYSTICK_INTERRUPT_FREQUENCY) );
+    robot_measured_angle_2 = calculate_x_angle_2( &robot_icm20600, icm_processed_data, &gyro_angle_integral, &accel_measured_angle, accel_buffer, 1.0f / (float)(SYSTICK_INTERRUPT_FREQUENCY) );
 
     if ( system_counter == SYSTICK_INTERRUPT_FREQUENCY / 2 )
     {
         toggle_d2_led();
         system_counter = 0;
     }
+
+
+
 }
 
 

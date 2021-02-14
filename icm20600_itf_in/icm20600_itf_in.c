@@ -32,6 +32,9 @@ static void icm_reset_variable_parameters( icm20600 *icm_instance );
 static uint16_t icm_check_gyro_parameters( icm20600 *icm_instance );
 static uint16_t icm_check_accel_parameters( icm20600 *icm_instance );
 static uint16_t icm_setup_gyro_and_accel( icm20600 *icm_instance );
+
+static void icm_check_raw_data_for_faults( icm20600 *icm_instance );
+
 static void icm_wakeup( icm20600 *icm_instance );
 
 /****************************************************************************************/
@@ -278,7 +281,23 @@ static uint16_t icm_setup_gyro_and_accel( icm20600 *icm_instance )
     return error_code;
 }
 
+static void icm_check_raw_data_for_faults( icm20600 *icm_instance )
+{
+    if(icm_instance->raw_data[icm_gyro_x_index] == 32767 || icm_instance->raw_data[icm_gyro_x_index] == -32768)
+    {
+        icm_instance->gyro_faults[icm_x_axis_index] = 1;
+    }
 
+    if(icm_instance->raw_data[icm_gyro_y_index] == 32767 || icm_instance->raw_data[icm_gyro_y_index] == -32768)
+    {
+        icm_instance->gyro_faults[icm_y_axis_index] = 1;
+    }
+
+    if(icm_instance->raw_data[icm_gyro_z_index] == 32767 || icm_instance->raw_data[icm_gyro_z_index] == -32768)
+    {
+        icm_instance->gyro_faults[icm_z_axis_index] = 1;
+    }
+}
 
 //! Resets sleep bit to zero and disables temperature sensor if needed.
 static void icm_wakeup(icm20600 *icm_instance)
@@ -324,12 +343,17 @@ uint16_t icm20600_init(icm20600 *icm_instance)
     icm_write_register( icm_instance, ICM20600_I2C_IF, ICM20600_I2C_IF_I2C_IF_DIS ); // Disable I2C
     error_code = icm_setup_gyro_and_accel(icm_instance);
 
+    icm_write_register(icm_instance, ICM20600_ACCEL_INTEL_CTRL, ICM20600_ACCEL_INTEL_CTRL_OUTPUT_LIMIT);
+
     icm_wakeup(icm_instance);
 
     icm_reset_variable_parameters(icm_instance); // In case user understood something wrong.
+    icm_instance->was_initialized = 1;
+
+
+
     icm20600_set_calibration_values(icm_instance);
 
-    icm_instance->was_initialized = 1;
     return error_code;
 }
 
@@ -498,185 +522,35 @@ uint16_t icm20600_get_raw_data(icm20600 *icm_instance)
     icm_instance->raw_data[icm_gyro_y_index] = icm_read_next_sequenced_byte( icm_instance ) << 8 | icm_read_next_sequenced_byte( icm_instance );
     icm_instance->raw_data[icm_gyro_z_index] = icm_read_next_sequenced_byte( icm_instance ) << 8 | icm_finish_reading_sequence(icm_instance);
 
+    icm_check_raw_data_for_faults(icm_instance);
+
     return 0;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-uint16_t icm20600_procces_raw_data(icm20600 *icm_instance, float *processed_output_array)
+uint16_t icm20600_process_raw_data( icm20600 *icm_instance, float *processed_output_array )
 {
-    if (icm_instance->was_initialized == 0)
+    if ( icm_instance->was_initialized == 0 )
     {
         return ICM20600_WAS_NOT_INITIALIZED_Err;
     }
 
-    float gyro_divider = 1.0f;
+    float gyro_sensitivity = icm20600_GYRO_BASIC_SENSITIVITY / (float)(1 << icm_instance->gyro_scale_setup);
+    float accel_sensitivity = (uint32_t)(icm20600_ACC_BASIC_SENSITIVITY >> (icm_instance->accel_scale_setup));
 
-    switch ( icm_instance->gyro_scale_setup )
+    processed_output_array[icm_accel_x_index] = (float)(icm_instance->raw_data[icm_accel_x_index]) / accel_sensitivity;
+    processed_output_array[icm_accel_y_index] = (float)(icm_instance->raw_data[icm_accel_y_index]) / accel_sensitivity;
+    processed_output_array[icm_accel_z_index] = (float)(icm_instance->raw_data[icm_accel_z_index]) / accel_sensitivity;
+
+    processed_output_array[icm_gyro_x_index] = (float)(icm_instance->raw_data[icm_gyro_x_index]) / gyro_sensitivity;
+    processed_output_array[icm_gyro_y_index] = (float)(icm_instance->raw_data[icm_gyro_y_index]) / gyro_sensitivity;
+    processed_output_array[icm_gyro_z_index] = (float)(icm_instance->raw_data[icm_gyro_z_index]) / gyro_sensitivity;
+
+    if ( icm_instance->enable_temperature_sensor )
     {
-        case icm_gyro_250dps_scale:
-            gyro_divider = 1.0f;
-            break;
-        case icm_gyro_500dps_scale:
-            gyro_divider = 2.0f;
-            break;
-        case icm_gyro_1000dps_scale:
-            gyro_divider = 4.0f;
-            break;
-        case icm_gyro_2000dps_scale:
-            gyro_divider = 8.0f;
-            break;
-        default:
-            break;
+        processed_output_array[icm_temperature_index] = (float)(icm_instance->raw_data[icm_temperature_index]) / ICM20600_TEMPERATURE_SENSITIVITY;
+        processed_output_array[icm_temperature_index] += ICM20600_TEMPERATURE_OFFSET;
     }
 
-        float gyro_sensitivity = icm20600_GYRO_BASIC_SENSITIVITY/gyro_divider;
-        float accel_sensitivity = (uint32_t)(icm20600_ACC_BASIC_SENSITIVITY >> (icm_instance->accel_scale_setup));    // Will be the same value for the 2g setup and twice as big for every next one
-
-        processed_output_array[icm_accel_x_index] = (float)(icm_instance->raw_data[icm_accel_x_index]) / accel_sensitivity;
-        processed_output_array[icm_accel_y_index] = (float)(icm_instance->raw_data[icm_accel_y_index]) / accel_sensitivity;
-        processed_output_array[icm_accel_z_index] = (float)(icm_instance->raw_data[icm_accel_z_index]) / accel_sensitivity;
-
-        processed_output_array[icm_gyro_x_index] = (float)(icm_instance->raw_data[icm_gyro_x_index]) / gyro_sensitivity;
-        processed_output_array[icm_gyro_y_index] = (float)(icm_instance->raw_data[icm_gyro_y_index]) / gyro_sensitivity;
-        processed_output_array[icm_gyro_z_index] = (float)(icm_instance->raw_data[icm_gyro_z_index]) / gyro_sensitivity;
-
-        if ( icm_instance->enable_temperature_sensor )
-        {
-            processed_output_array[icm_temperature_index] = (float)(icm_instance->raw_data[icm_temperature_index]) / icm20600_TEMPERATURE_SENSITIVITY + icm20600_TEMPERATURE_OFFSET;
-        }
-
-        return 0;
+    return 0;
 }
-
-
-//uint16_t icm20600_get_proccesed_data(icm20600 *icm_instance, float *processed_output_array)
-//{
-//    if (icm_instance->was_initialized == 0)
-//    {
-//        return ICM20600_WAS_NOT_INITIALIZED_Err;
-//    }
-//
-//    int16_t current_sencor_measurements[7];
-//    icm20600_get_raw_data(icm_instance, current_sencor_measurements);
-//
-//    icm20600_procces_raw_data(icm_instance, current_sencor_measurements, processed_output_array);
-//
-//    return 0;
-//}
-
-/****************************************************************************************/
-/*                                                                                      */
-/*                                  ?????????????????                                   */
-/*                                                                                      */
-/****************************************************************************************/
-
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! //
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! //
-// Code danger zone
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! //
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! //
-
-// Вычисляет все углы в радианах
-
-// Скорее всего эта функция на самом деле не работает и ее надо будет полностью переписать, когда я разберусь в том,
-//  как именно она должна работать. Но пока я не разобрался оставлю как есть
-//uint32_t icm20600_calculate_all_angles(icm20600 *icm_instance, float angles_storage[3], float integration_period)
-//{
-//    if (icm_instance->was_initialized == 0)
-//    {
-//        return ICM20600_WAS_NOT_INITIALIZED_Err;
-//    }
-//
-//    float processed_values[7];
-//    icm20600_get_proccesed_data(icm_instance, processed_values);
-//
-//    // z x angle calculations
-//    float accelerometer_based_angle = atan2(processed_values[icm_accel_x_index], processed_values[icm_accel_z_index]) * 57.296f;
-//    float gyroscope_based_angle = (icm_instance->previous_gyro_values[icm_gyro_x_index] + processed_values[icm_gyro_y_index])/2.0f * integration_period;
-//    icm_instance->previous_gyro_values[icm_gyro_x_index] = processed_values[icm_gyro_y_index];
-//
-//    // Calculations, unique for every plane
-//    angles_storage[z_x_angle_index] = accelerometer_based_angle * icm_instance->complementary_filter_coef + gyroscope_based_angle * (1.0f - icm_instance->complementary_filter_coef);
-//
-//    return 0;
-//}
-
-//
-//// Вычисляет только нужный угол из трех. Может вызываться без вызова каких либо других функций, так как будет считывать значения датчика самостоятельно
-//uint32_t icm20600_calculate_z_x_angle(icm20600 *icm_instance, float *calculated_angle, float integration_period)
-//{
-//    if (icm_instance->was_initialized == 0)
-//    {
-//        return ICM20600_WAS_NOT_INITIALIZED_Err;
-//    }
-//
-//    float processed_values[7];
-//    icm20600_get_proccesed_data(icm_instance, processed_values);
-//
-//    // Calculations, unique for every plane
-//    float accelerometer_based_angle = atan2(processed_values[icm_accel_x_index], processed_values[icm_accel_z_index]) * 57.296f;
-//    float gyroscope_based_angle = (icm_instance->previous_gyro_y + processed_values[icm_gyro_y_index])/2.0f * integration_period;
-//    icm_instance->previous_gyro_y = processed_values[icm_gyro_y_index];
-//
-//    *calculated_angle = accelerometer_based_angle * icm_instance->complementary_filter_coef + gyroscope_based_angle * (1.0f - icm_instance->complementary_filter_coef);
-//
-//    return 0;
-//}
-//
-//
-//uint32_t icm20600_calculate_y_z_angle(icm20600 *icm_instance, float *calculated_angle, float integration_period)
-//{
-//    if (icm_instance->was_initialized == 0)
-//    {
-//        return ICM20600_WAS_NOT_INITIALIZED_Err;
-//    }
-//
-//    float processed_values[7];
-//    icm20600_get_proccesed_data(icm_instance, processed_values);
-//
-//    // Calculations, unique for every plane
-//    float accelerometer_based_angle = atan2(processed_values[icm_accel_z_index], processed_values[icm_accel_y_index]) * 57.296f;    // Value in degrees
-//    float gyroscope_based_angle = (icm_instance->previous_gyro_x + processed_values[icm_gyro_x_index])/2.0f * integration_period;
-//    icm_instance->previous_gyro_x = processed_values[icm_gyro_x_index];
-//
-//    *calculated_angle = accelerometer_based_angle * icm_instance->complementary_filter_coef + gyroscope_based_angle * (1.0f - icm_instance->complementary_filter_coef);
-//
-//    return 0;
-//}
-//
-//uint32_t icm20600_calculate_x_y_angle(icm20600 *icm_instance, float *calculated_angle, float integration_period)
-//{
-//    if (icm_instance->was_initialized == 0)
-//    {
-//        return ICM20600_WAS_NOT_INITIALIZED_Err;
-//    }
-//
-//    float processed_values[7];
-//    icm20600_get_proccesed_data(icm_instance, processed_values);
-//
-//    // пока просто верну 0. Так как для балансирующего робота этот угол не нужен
-//
-//
-//    return 0;
-//}
-
 
