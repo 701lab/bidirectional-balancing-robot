@@ -12,7 +12,7 @@ This project is not intended for use outside of the balancing robot developed in
 
 ![Иллюстрация к проекту](https://github.com/701lab/bidirectional-balancing-robot/blob/master/images/BR_base.jpg)
 
-
+Максимальный возможный угол - чуть меньше 180 градусов, минимальный возможный угол чуть больше -180 градусов, соответственно в нижнем положении происходит перевод значения из отрицательный в положительные и наоборот.
 
 ### How to contribute
 
