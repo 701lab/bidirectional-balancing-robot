@@ -131,7 +131,7 @@ static void setup_drv8701_1_timers( void )
     TIM1->BDTR |= TIM_BDTR_MOE; // Main output enable
 
     // Zero velocity by default.
-    TIM1->CCR1 = PWM_PRECISION/2;
+    TIM1->CCR1 = PWM_PRECISION;
     TIM1->CCR2 = PWM_PRECISION;
 
     TIM1->CR1 |= TIM_CR1_CEN; // Enable timer
@@ -155,7 +155,7 @@ static void setup_drv8701_2_timers( void )
     TIM1->BDTR |= TIM_BDTR_MOE; // Main output enable
 
     // Zero velocity by default.
-    TIM1->CCR3 = PWM_PRECISION/2;
+    TIM1->CCR3 = PWM_PRECISION;
     TIM1->CCR4 = PWM_PRECISION;
 
     TIM1->CR1 |= TIM_CR1_CEN; // Enable timer

@@ -137,12 +137,13 @@ int main( void )
     add_mistake_to_the_log( icm20600_reset_all_registeres( &robot_icm20600 ) );
     delay_in_milliseconds(10);
     add_mistake_to_the_log( icm20600_init( &robot_icm20600 ) );
+    add_mistake_to_the_log( icm20600_disable_one_gyro_channel( &robot_icm20600, icm_y_axis_index ) );
+    add_mistake_to_the_log( icm20600_disable_one_gyro_channel( &robot_icm20600, icm_z_axis_index ) );
+
     robot_measured_angle = calculate_base_angle(&robot_icm20600, 20);
     gyro_angle_integral = robot_measured_angle;
 
 
-//    add_mistake_to_the_log( icm20600_disable_one_accel_channel( &robot_icm20600, icm_x_axis_index ) );
-//    add_mistake_to_the_log( icm20600_disable_one_gyro_channel( &robot_icm20600, icm_x_axis_index ) );
 
 //    calibrate_icm20600_gyro(&robot_icm20600, 10, 20);
 
@@ -150,6 +151,10 @@ int main( void )
 
     motor1.enable();
     motor2.enable();
+
+
+    motor1.set_pwm_duty_cycle(PWM_PRECISION/2);
+    motor2.set_pwm_duty_cycle(PWM_PRECISION/2);
 
     while ( 1 )
     {
@@ -196,7 +201,7 @@ void SysTick_Handler()
     add_mistake_to_the_log( icm20600_get_raw_data( &robot_icm20600 ) );
     add_mistake_to_the_log( icm20600_process_raw_data( &robot_icm20600, icm_processed_data ) );
     calculate_x_angle( &robot_icm20600, icm_processed_data, &robot_measured_angle , 1.0f / (float)(SYSTICK_INTERRUPT_FREQUENCY) );
-    robot_measured_angle_2 = calculate_x_angle_2( &robot_icm20600, icm_processed_data, &gyro_angle_integral, &accel_measured_angle, accel_buffer, 1.0f / (float)(SYSTICK_INTERRUPT_FREQUENCY) );
+//    robot_measured_angle_2 = calculate_x_angle_2( &robot_icm20600, icm_processed_data, &gyro_angle_integral, &accel_measured_angle, accel_buffer, 1.0f / (float)(SYSTICK_INTERRUPT_FREQUENCY) );
 
     if ( system_counter == SYSTICK_INTERRUPT_FREQUENCY / 2 )
     {
