@@ -16,7 +16,7 @@ typedef struct{
 	float position_precision;
 	int16_t previous_encoder_counter_value;
 
-} position_control;
+} motor_position_controler;
 
 
 typedef struct{
@@ -28,10 +28,11 @@ typedef struct{
 	float current_speed;
 	float previous_speed_mistake; // Used in trapezoidal integration
 	float regulator_control_signal;
-	float controller_output_limitation_value;
+	float controller_output_limitat;
+
 	int16_t previous_encoder_counter_value;
 
-} speed_control;
+} motor_speed_controler;
 
 
 typedef struct{
@@ -58,13 +59,13 @@ typedef struct{
  */
 typedef struct{
 
-	position_control *position_controller;
-	speed_control *speed_controller;
+	motor_position_controler *position_controller;
+	motor_speed_controler *speed_controller;
 
 	void (*enable)(void);
 	void (*disable)(void);
 	uint32_t (*set_pwm_duty_cycle)(const int32_t duty_cycle_coefficient);
-	int16_t	(*get_encoder_value)(void);
+	int16_t	(*get_encoder_counter_val)(void);
 
 	const float encoder_constant;
 
@@ -78,7 +79,7 @@ typedef struct{
 uint32_t motors_rotation_deiraction_test (motor *motor_instance);
 
 float motors_get_position(motor *motor_instance);
-float motors_get_speed_by_incements(const motor *motor_instance, const float time_increment);
+float motor_get_speed_by_incements(const motor *motor_instance, const float time_increment);
 
 float motors_position_controller_handler(motor *motor_instance); // returns speed task
 float motors_speed_controller_handler(const motor *motor_instance, const float time_increment); // ideally should return current controller task (float)

@@ -47,6 +47,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/bidirectional-balancing-robot/icm20600_itf_in}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/bidirectional-balancing-robot/interfacing}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/bidirectional-balancing-robot/nrf24l01p_int_in}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/bidirectional-balancing-robot/Tests}&quot;"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.1950604820" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>
@@ -76,7 +77,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Inc"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Src"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Startup"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Tests"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Tests"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="icm20600_itf_in"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="interfacing"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="nrf24l01p_int_in"/>

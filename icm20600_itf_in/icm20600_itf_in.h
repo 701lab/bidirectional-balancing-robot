@@ -97,18 +97,19 @@ typedef enum icm_gyro_averaging_filter_setup
 /*                                                                                      */
 /****************************************************************************************/
 
-typedef struct{
+typedef struct
+{
     // @brief Chip select high. Used in SPI communication to indicate the end of the transmission.
     //      Function must set MCU pin connected to the device CS pin logic low.
-    const void (*set_cs_high)(void);
+    const void (*set_cs_high)( void );
 
     // @brief Chip select low. Used in SPI communication to indicate start of the transmission.
     //      Function must set MCU pin connected to the device CS pin logic high.
-    const void (*set_cs_low)(void);
+    const void (*set_cs_low)( void );
 
     // @brief Sends single byte through desired SPI.
     //      Function must send input byte with the SPI connected to the desired icm-20600 device in single-byte mode. Must return byte received by SPI during transmission.
-    const uint8_t (*spi_write_byte)(uint8_t byte_to_be_sent);
+    const uint8_t (*spi_write_byte)( uint8_t byte_to_be_sent );
 
     float previous_gyro_values[3];
     float complementary_filter_coef; // Maybe make sense to change for an array.
