@@ -291,6 +291,8 @@ float calculate_x_angle_2(icm20600 *icm_instance, float *processed_values, float
 }
 
 
+uint32_t edge_was_reached = 0;
+
 void handle_angle_loop(balancing_robot *robot_instance, float integration_period)
 {
     if (robot_instance->mode != ROBOT_BALANCING)
@@ -301,21 +303,23 @@ void handle_angle_loop(balancing_robot *robot_instance, float integration_period
     float mistake = robot_instance->target_angle - robot_instance->current_angle;
 
     // Пока пропустим реализацию насыщения, ибо фиг пойми как его правильно реализовать.
-    robot_instance->angle_integral += (mistake + robot_instance->previous_angle_mistake)/ 2.0f * integration_period;
-    if(robot_instance->angle_integral > 10.0f)
+    robot_instance->angle_integral += (mistake + robot_instance->previous_angle_mistake) / 2.0f * integration_period * robot_instance->angle_ki;
+    if ( robot_instance->angle_integral > 800.0f )
     {
-        robot_instance->angle_integral = 10.0f;
+        robot_instance->angle_integral = 800.0f;
+        edge_was_reached = 1;
     }
-    else if (robot_instance->angle_integral < -10.0f)
+    else if ( robot_instance->angle_integral < -800.0f )
     {
-        robot_instance->angle_integral = -10.0f;
+        robot_instance->angle_integral = -800.0f;
+        edge_was_reached = 2;
     }
     robot_instance->previous_angle_mistake = mistake;
 
-    float p_part = mistake * robot_instance->angle_kp;
-    float d_part = robot_instance->icm->raw_data[icm_gyro_x_index] * robot_instance->angle_kd;
+    robot_instance->angle_p_part = mistake * robot_instance->angle_kp;
+    robot_instance->angle_d_part = robot_instance->icm->raw_data[icm_gyro_x_index] * robot_instance->angle_kd;
 
-    robot_instance->regulator_control_signal = p_part + robot_instance->angle_integral + d_part;
+    robot_instance->regulator_control_signal = robot_instance->angle_p_part + robot_instance->angle_integral + robot_instance->angle_d_part;
 
     robot_instance->left_motor->set_pwm_duty_cycle( robot_instance->regulator_control_signal );
     robot_instance->right_motor->set_pwm_duty_cycle( robot_instance->regulator_control_signal );
@@ -323,32 +327,36 @@ void handle_angle_loop(balancing_robot *robot_instance, float integration_period
 
 void handle_speed_loop(balancing_robot *robot, float integration_period)
 {
-    if (robot->mode != ROBOT_BALANCING)
-    {
-        return;
-    }
     motor_get_speed_by_incements(robot->left_motor, integration_period);
     motor_get_speed_by_incements(robot->right_motor, integration_period);
 
     robot->current_linear_speed = (robot->left_motor->speed_controller->current_speed + robot->right_motor->speed_controller->current_speed) / 2.0;
     robot->current_rotational_speed = (robot->left_motor->speed_controller->current_speed - robot->right_motor->speed_controller->current_speed) / 2.0;
 
+    if (robot->mode != ROBOT_BALANCING)
+    {
+        return;
+    }
+
     float linear_mistake = robot->target_linear_speed - robot->current_linear_speed;
     float rotational_mistake = robot->target_rotational_speed - robot->current_rotational_speed;
 
-    robot->speed_integral += (linear_mistake + robot->previous_linear_speed_mistake) / 2.0f * integration_period;
-    if(robot->speed_integral > 3.0f)
+    robot->speed_integral += (linear_mistake + robot->previous_linear_speed_mistake) / 2.0f * integration_period * robot->speed_ki;
+    if ( robot->speed_integral > 3.0f )
     {
         robot->speed_integral = 3.0f;
+        edge_was_reached = 3;
     }
-    else if (robot->speed_integral < -3.0f)
+    else if ( robot->speed_integral < -3.0f )
     {
         robot->speed_integral = -3.0f;
+        edge_was_reached = 4;
     }
 
     robot->previous_linear_speed_mistake = linear_mistake;
 
-    robot->target_angle = robot->zero_angle - (linear_mistake*robot->speed_kp + robot->speed_integral*robot->speed_ki);
+    robot->speed_p_part = linear_mistake*robot->speed_kp;
+    robot->target_angle = robot->zero_angle - ( robot->speed_p_part + robot->speed_integral);
 
 }
 
@@ -360,10 +368,6 @@ void reset_control_system ( balancing_robot *robot)
 
     robot->speed_integral = 0.0f;
     robot->target_linear_speed = 0.0f;
-    robot->left_motor->speed_controller->previous_encoder_counter_value = 0;
-    robot->right_motor->speed_controller->previous_encoder_counter_value = 0;
-    robot->right_motor->speed_controller->current_speed = 0.0f;
-    robot->left_motor->speed_controller->current_speed = 0.0f;
 
     robot->previous_linear_speed_mistake = 0.0f;
     robot->regulator_control_signal = 0;

@@ -133,8 +133,6 @@ balancing_robot robot =
                         {
                           .speed_integral = 0.0f,
                           .speed_integral_limit = PWM_PRECISION,
-                          .speed_kp = 1.0f,
-                          .speed_ki = 1.0f,
                           .current_linear_speed = 0.0f,
                           .current_rotational_speed = 0.0f,
                           .previous_linear_speed_mistake = 0.0f,
@@ -142,17 +140,20 @@ balancing_robot robot =
                           .target_linear_speed = 0.0f,
                           .target_rotational_speed = 0.0f,
 
-                          .angle_kp = 200.0f,
-                          .angle_ki = 300.0f,
-                          //.angle_kd = 0.08f,
+                          .speed_kp = 1.2f, //1.2, 1.3 ,70. 700
+                          .speed_ki = 1.2f, //1.0-1.1 good: 0.3  160 360 0
+
+                          .angle_kp = 70.0f, //125 good
+                          .angle_ki = 750.0f,
+                          .angle_kd = 0.00f,
 
                           .angle_integral = 0.0f,
                           .controller_output_limitat = 0.0f,
                           .previous_angle_mistake = 0.0f,
                           .regulator_control_signal = 0.0f,
 
-                          .zero_angle = 1.0f,
-                          .target_angle = 1.0f,
+                          .zero_angle = 0.8f,
+                          .target_angle = 0.8f,
 
                           .current_angle = 0.0f,
                           .previous_angle = 0.0f,
@@ -174,6 +175,8 @@ balancing_robot robot =
 //float gyro_angle_integral = 0.0f;
 //float accel_measured_angle = 0.0f;
 //float accel_buffer[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+
 
 /****************************************************************************************/
 /*                                                                                      */
@@ -228,8 +231,6 @@ void SysTick_Handler()
         toggle_d2_led();
         system_counter = 0;
     }
-
-
 
     speed_loop_counter += 1;
     if ( speed_loop_counter == (SYSTICK_INTERRUPT_FREQUENCY / speed_loop_freq) )

@@ -44,11 +44,14 @@ typedef enum robot_mode
 typedef struct
 {
     float angle_kp;
+    float angle_p_part;
     float angle_ki;
-    float angle_kd;
     float angle_integral;
+    float angle_kd;
+    float angle_d_part;
 
     float speed_kp;
+    float speed_p_part;
     float speed_ki;
     float speed_integral;
     float speed_integral_limit;
