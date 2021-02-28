@@ -2,7 +2,7 @@
  * @file device.h
  *
  * Contains the main, system related definitions and function declarations.
- *  Unlike interfacing libraries, this file can be freely updated and changed in order to get the desired behavior.
+ *  Unlike interfacing librar ies, this file can be freely updated and changed in order to get the desired behavior.
  */
 
 #ifndef DEVICE_H_
@@ -26,11 +26,11 @@
 #include "stdlib.h"
 
 
-//#define BOARD_1
-#define BOARD_2
+#define BOARD_1
+//#define BOARD_2
 
-#define SWITCH_ANGLE            (22.5f)
-#define SWITCH_HYSTERESYS       (2.5f)
+#define SWITCH_ANGLE            (14.5f)
+#define SWITCH_HYSTERESYS       (12.5f)
 
 
 typedef enum robot_mode
@@ -54,12 +54,21 @@ typedef struct
     float speed_p_part;
     float speed_ki;
     float speed_integral;
+    float speed_i_part;
     float speed_integral_limit;
     float target_linear_speed;
     float current_linear_speed;
-    float current_rotational_speed;
     float previous_linear_speed_mistake;
+
     float target_rotational_speed;
+    float current_rotational_speed;
+    float rotation_kp;
+    float rotation_p_part;
+    float rotation_ki;
+    float rotation_i_part;
+    float rotation_integral;
+    float previous_rotational_mistake;
+    int16_t rotational_task;
 
     float zero_angle;
     float target_angle;
@@ -85,15 +94,17 @@ void dummy_delay( uint32_t duration );
 
 void calibrate_icm20600_gyro( icm20600 *icm_instance, uint8_t calibration_coef, uint32_t cycle_length );
 
-void calculate_base_angle( balancing_robot *robot_instance, uint32_t cycle_length );
+void calculate_starting_angle( balancing_robot *robot_instance, uint32_t cycle_length );
 
 void calculate_x_angle( balancing_robot *robot_instance, float *processed_values, float integration_period );
 float calculate_x_angle_2( icm20600 *icm_instance, float *processed_values, float *gyro_intergral_value, float *accel_based_value, float *buffer,
                            float integration_period );
 
 void handle_angle_loop( balancing_robot *robot_instance, float integration_period );
-void handle_speed_loop( balancing_robot *robot_instance, float integration_period );
+void handle_speed_loops( balancing_robot *robot_instance, float integration_period );
 
 void reset_control_system ( balancing_robot *robot);
+
+void handle_nrf_message (balancing_robot *robot, uint8_t message[]);
 
 #endif /* DEVICE_H_ */

@@ -1,4 +1,4 @@
-/*!
+ /*!
  * @file main.c
  */
 
@@ -33,6 +33,8 @@ nrf24l01p robot_nrf = {
 
 uint8_t nrf_tx_address[5] = { 0x11, 0x22, 0x33, 0x44, 0x66 }; // blue-LED controller
 uint8_t nrf_input_data[6] = { 0, 0, 0, 0, 0, 0 };
+uint32_t nrf_watchdog_counter = SYSTICK_INTERRUPT_FREQUENCY; // 1 second watchdog
+
 
 icm20600 robot_icm =
                           {
@@ -58,10 +60,10 @@ icm20600 robot_icm =
                             .previous_gyro_values = { 0, 0, 0 },
 
 #ifdef BOARD_1
-                            .gyro_calibration_coefficients = { 104, -63, 6 },
+                            .gyro_calibration_coefficients = { 103, -63, 6 },
 #endif
 #ifdef BOARD_2
-                            .gyro_calibration_coefficients = { -25, -65, -25 },
+                            .gyro_calibration_coefficients = { -32, -68, -23 },
 #endif
 
                             .was_initialized = 0
@@ -72,8 +74,8 @@ float icm_processed_data[7] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 motor_speed_controler m1_spd_controller =
                                           {
                                             .controller_output_limitat = PWM_PRECISION,
-                                            .ki = 1.0f,
-                                            .kp = 1.0f,
+                                            .ki = 750.0f,
+                                            .kp = 200.0f,
 
                                             .previous_encoder_counter_value = 0,
 
@@ -88,8 +90,8 @@ motor_speed_controler m1_spd_controller =
 motor_speed_controler m2_spd_controller =
                                           {
                                             .controller_output_limitat = PWM_PRECISION,
-                                            .ki = 1.0f,
-                                            .kp = 1.0f,
+                                            .ki = 750.0f,
+                                            .kp = 200.0f,
 
                                             .previous_encoder_counter_value = 0,
 
@@ -129,6 +131,12 @@ motor motor2 =
                  .position_controller = 0,
                };
 
+/****************************************************************************************/
+/*                                                                                      */
+/*                               Control loop parameters                                */
+/*                                                                                      */
+/****************************************************************************************/
+
 balancing_robot robot =
                         {
                           .speed_integral = 0.0f,
@@ -141,11 +149,17 @@ balancing_robot robot =
                           .target_rotational_speed = 0.0f,
 
                           .speed_kp = 1.2f, //1.2, 1.3 ,70. 700
-                          .speed_ki = 1.2f, //1.0-1.1 good: 0.3  160 360 0
+                          .speed_ki = 1.0f, //1.0-1.1 good: 0.3  160 360 0
 
-                          .angle_kp = 70.0f, //125 good
-                          .angle_ki = 750.0f,
+                          .angle_kp = 70.0f, // 65 //80
+                          .angle_ki = 620.0f, // 800 //72
                           .angle_kd = 0.00f,
+
+                          .rotation_kp = 50.0f, // needs testing
+                          .rotation_ki = 150.0f, // needs even more testing
+                          .rotation_integral = 0.0f,
+                          .rotation_p_part = 0.0f,
+                          .previous_rotational_mistake = 0.0f,
 
                           .angle_integral = 0.0f,
                           .controller_output_limitat = 0.0f,
@@ -165,18 +179,6 @@ balancing_robot robot =
                           .nrf = &robot_nrf,
                         };
 
-/****************************************************************************************/
-/*                                                                                      */
-/*                               Control loop parameters                                */
-/*                                                                                      */
-/****************************************************************************************/
-
-//float robot_measured_angle_2 = 0.0f;
-//float gyro_angle_integral = 0.0f;
-//float accel_measured_angle = 0.0f;
-//float accel_buffer[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-
-
 
 /****************************************************************************************/
 /*                                                                                      */
@@ -187,10 +189,9 @@ balancing_robot robot =
 int main( void )
 {
     init_robot( &robot, nrf_tx_address );
-    calculate_base_angle( &robot, 20 );
-//    gyro_angle_integral = robot_measured_angle; // needed only for angles tests.
+    calculate_starting_angle( &robot, 20 );
 
-//    calibrate_icm20600_gyro(&robot_icm20600, 10, 20); // to calibrate IMU values.
+//    calibrate_icm20600_gyro(robot.icm, 10, 20); // to calibrate IMU values.
     setup_system_timer();
 
     robot.left_motor->enable();
@@ -198,12 +199,13 @@ int main( void )
 
     while ( 1 )
     {
-
 //        run_motors_triangle_movement_test(&motor1, &motor2);
 
         if ( nrf24_is_new_data_availiable( robot.nrf ) )
         {
             nrf24_read_message( robot.nrf, nrf_input_data, 6 );
+            handle_nrf_message(&robot, nrf_input_data);
+            nrf_watchdog_counter = SYSTICK_INTERRUPT_FREQUENCY;
             toggle_d4_led();
         }
     }
@@ -225,6 +227,7 @@ uint32_t speed_loop_counter = 0;
 
 void SysTick_Handler()
 {
+    // Simple blink just to show, that the board is online.
     system_counter += 1;
     if ( system_counter == SYSTICK_INTERRUPT_FREQUENCY / 2 )
     {
@@ -232,10 +235,28 @@ void SysTick_Handler()
         system_counter = 0;
     }
 
+    // Nrf watchdog.
+    nrf_watchdog_counter -= 1;
+    if(nrf_watchdog_counter == 0)
+    {
+        if(robot.target_linear_speed > 0.1f || robot.target_linear_speed < -0.1f)
+        {
+            robot.speed_integral = 0.0f;
+        }
+        robot.target_linear_speed = 0.0f;
+
+        if(robot.target_rotational_speed > 0.1f || robot.target_rotational_speed < -0.1f)
+        {
+            robot.rotation_integral = 0.0f;
+        }
+        robot.target_rotational_speed = 0.0f;
+    }
+
+    // Control loops
     speed_loop_counter += 1;
     if ( speed_loop_counter == (SYSTICK_INTERRUPT_FREQUENCY / speed_loop_freq) )
     {
-        handle_speed_loop(&robot, 1.0f/ (float)(speed_loop_freq));
+        handle_speed_loops(&robot, 1.0f/ (float)(speed_loop_freq));
         speed_loop_counter = 0;
     }
 
@@ -250,6 +271,5 @@ void SysTick_Handler()
         handle_angle_loop( &robot, 1.0f / (float)(angle_loop_freq) );
         angle_loop_counter = 0;
     }
-
 }
 

@@ -6,7 +6,6 @@
 
 #include "device.h"
 
-
 /****************************************************************************************/
 /*                                                                                      */
 /*                            Static functions declarations                             */
@@ -17,6 +16,8 @@ static void init_icm( icm20600 *icm_instance );
 static void init_nrf_as_tx( nrf24l01p *nrf_instance, uint8_t tx_address[] );
 static void update_robot_mode(balancing_robot *robot_instance);
 
+static void handle_message_in_balancing_mode(balancing_robot *robot, uint8_t message[]);
+static void handle_message_in_horizontal_modes(balancing_robot *robot, uint8_t message[]);
 
 /****************************************************************************************/
 /*                                                                                      */
@@ -123,6 +124,99 @@ static void update_robot_mode( balancing_robot *robot_instance )
     }
 }
 
+static void handle_message_in_balancing_mode(balancing_robot *robot, uint8_t message[])
+{
+    uint8_t right_joystick_top_bottom = (message[0] & 0x03);
+    uint8_t left_joystick_left_right = (message[0] & 0x30) >> 4;
+
+    if ( right_joystick_top_bottom == 1 )
+    {
+        robot->target_linear_speed = -0.8f;
+    }
+    else if ( right_joystick_top_bottom == 2 )
+    {
+        robot->target_linear_speed = 0.8f;
+    }
+    else
+    {
+        robot->target_linear_speed = 0.0f;
+    }
+
+    if ( left_joystick_left_right == 1 )
+    {
+        if ( robot->target_rotational_speed > -0.5f )
+        {
+            robot->rotation_integral = 0.0f;
+            robot->target_rotational_speed = -0.6f;
+        }
+    }
+    else if ( left_joystick_left_right == 2 )
+    {
+        if ( robot->target_rotational_speed < 0.5f )
+        {
+            robot->rotation_integral = 0.0f;
+            robot->target_rotational_speed = 0.6f;
+        }
+    }
+    else
+    {
+        if ( robot->target_rotational_speed > 0.1f || robot->target_rotational_speed < -0.1f )
+        {
+            robot->rotation_integral = 0.0f;
+            robot->target_rotational_speed = 0.0f;
+        }
+    }
+}
+
+static void handle_message_in_horizontal_modes( balancing_robot *robot, uint8_t message[] )
+{
+    uint8_t right_joystick_top_bottom = (message[0] & 0x03);
+    uint8_t left_joystick_left_right = (message[0] & 0x30) >> 4;
+
+    if ( right_joystick_top_bottom == 1 )
+    {
+        if( robot->current_angle > 180 - (SWITCH_ANGLE + 3.5f*SWITCH_HYSTERESYS) || robot->current_angle < -180 + (SWITCH_ANGLE + 3.5f*SWITCH_HYSTERESYS) ||
+                    (robot->current_angle < (SWITCH_ANGLE + 3.5f*SWITCH_HYSTERESYS) && robot->current_angle > -(SWITCH_ANGLE + 3.5f*SWITCH_HYSTERESYS)))
+        {
+            robot->right_motor->speed_controller->target_speed = 0.45f;
+            robot->left_motor->speed_controller->target_speed = 0.45f;
+        }
+        else
+        {
+            robot->right_motor->speed_controller->target_speed = 1.2f;
+            robot->left_motor->speed_controller->target_speed = 1.2f;
+        }
+    }
+    else if ( right_joystick_top_bottom == 2 )
+    {
+        if( robot->current_angle > 180 - (SWITCH_ANGLE + 3.5f*SWITCH_HYSTERESYS) || robot->current_angle < -180 + (SWITCH_ANGLE + 3.5f*SWITCH_HYSTERESYS) ||
+                    (robot->current_angle < (SWITCH_ANGLE + 3.5f*SWITCH_HYSTERESYS) && robot->current_angle > -(SWITCH_ANGLE + 3.5f*SWITCH_HYSTERESYS)))
+        {
+            robot->right_motor->speed_controller->target_speed = -0.45f;
+            robot->left_motor->speed_controller->target_speed = -0.45f;
+        }
+        robot->right_motor->speed_controller->target_speed = -1.2f;
+        robot->left_motor->speed_controller->target_speed = -1.2f;
+    }
+    else if ( left_joystick_left_right == 1 )
+    {
+        robot->right_motor->speed_controller->target_speed = 0.8f;
+        robot->left_motor->speed_controller->target_speed = -0.8f;
+    }
+    else if ( left_joystick_left_right == 2 )
+    {
+        robot->right_motor->speed_controller->target_speed = -0.8f;
+        robot->left_motor->speed_controller->target_speed = 0.8f;
+    }
+    else
+    {
+        robot->right_motor->speed_controller->current_integral = 0.0f;
+        robot->left_motor->speed_controller->current_integral = 0.0f;
+        robot->right_motor->speed_controller->target_speed = 0.0f;
+        robot->left_motor->speed_controller->target_speed = 0.0f;
+    }
+}
+
 /****************************************************************************************/
 /*                                                                                      */
 /*                          Global functions implementations                            */
@@ -192,7 +286,7 @@ void calibrate_icm20600_gyro( icm20600 *icm_instance, uint8_t calibration_coef, 
     icm20600_set_calibration_values( icm_instance );
 }
 
-void calculate_base_angle(balancing_robot *robot_instance, uint32_t cycle_length)
+void calculate_starting_angle(balancing_robot *robot_instance, uint32_t cycle_length)
 {
     int32_t accel_values[2] = { 0, 0 };
 
@@ -291,7 +385,6 @@ float calculate_x_angle_2(icm20600 *icm_instance, float *processed_values, float
 }
 
 
-uint32_t edge_was_reached = 0;
 
 void handle_angle_loop(balancing_robot *robot_instance, float integration_period)
 {
@@ -302,17 +395,14 @@ void handle_angle_loop(balancing_robot *robot_instance, float integration_period
 
     float mistake = robot_instance->target_angle - robot_instance->current_angle;
 
-    // Пока пропустим реализацию насыщения, ибо фиг пойми как его правильно реализовать.
     robot_instance->angle_integral += (mistake + robot_instance->previous_angle_mistake) / 2.0f * integration_period * robot_instance->angle_ki;
-    if ( robot_instance->angle_integral > 800.0f )
+    if ( robot_instance->angle_integral > 1000.0f )
     {
-        robot_instance->angle_integral = 800.0f;
-        edge_was_reached = 1;
+        robot_instance->angle_integral = 1000.0f;
     }
-    else if ( robot_instance->angle_integral < -800.0f )
+    else if ( robot_instance->angle_integral < -1000.0f )
     {
-        robot_instance->angle_integral = -800.0f;
-        edge_was_reached = 2;
+        robot_instance->angle_integral = -1000.0f;
     }
     robot_instance->previous_angle_mistake = mistake;
 
@@ -321,11 +411,18 @@ void handle_angle_loop(balancing_robot *robot_instance, float integration_period
 
     robot_instance->regulator_control_signal = robot_instance->angle_p_part + robot_instance->angle_integral + robot_instance->angle_d_part;
 
-    robot_instance->left_motor->set_pwm_duty_cycle( robot_instance->regulator_control_signal );
-    robot_instance->right_motor->set_pwm_duty_cycle( robot_instance->regulator_control_signal );
+//   robot_instance->left_motor->set_pwm_duty_cycle( robot_instance->regulator_control_signal );
+//   robot_instance->right_motor->set_pwm_duty_cycle( robot_instance->regulator_control_signal );
+    robot_instance->left_motor->set_pwm_duty_cycle( robot_instance->regulator_control_signal + robot_instance->rotational_task);
+    robot_instance->right_motor->set_pwm_duty_cycle( robot_instance->regulator_control_signal - robot_instance->rotational_task);
 }
 
-void handle_speed_loop(balancing_robot *robot, float integration_period)
+/*!
+ * Handles both linear and rotational movement loops.
+ *
+ * @note Function is written a bit messy an probably should be disassembled into two additional functions.
+ */
+void handle_speed_loops(balancing_robot *robot, float integration_period)
 {
     motor_get_speed_by_incements(robot->left_motor, integration_period);
     motor_get_speed_by_incements(robot->right_motor, integration_period);
@@ -333,7 +430,19 @@ void handle_speed_loop(balancing_robot *robot, float integration_period)
     robot->current_linear_speed = (robot->left_motor->speed_controller->current_speed + robot->right_motor->speed_controller->current_speed) / 2.0;
     robot->current_rotational_speed = (robot->left_motor->speed_controller->current_speed - robot->right_motor->speed_controller->current_speed) / 2.0;
 
-    if (robot->mode != ROBOT_BALANCING)
+
+    if(robot->mode == ROBOT_HORIZONTAL_BOTTOM || robot->mode == ROBOT_HORIZONTAL_TOP)
+    {
+        int16_t left_m_voltage_target = motors_speed_controller_handler(robot->left_motor, integration_period);
+        int16_t right_m_voltage_target = motors_speed_controller_handler(robot->right_motor, integration_period);
+
+        // this is a wrong thing to do because it breaks encapsulation and makes code hard to update, but it is an easy solution and will do.
+        robot->left_motor->set_pwm_duty_cycle(left_m_voltage_target);
+        robot->right_motor->set_pwm_duty_cycle(right_m_voltage_target);
+
+        return;
+    }
+    else if (robot->mode == ROBOT_IDLE)
     {
         return;
     }
@@ -341,23 +450,37 @@ void handle_speed_loop(balancing_robot *robot, float integration_period)
     float linear_mistake = robot->target_linear_speed - robot->current_linear_speed;
     float rotational_mistake = robot->target_rotational_speed - robot->current_rotational_speed;
 
-    robot->speed_integral += (linear_mistake + robot->previous_linear_speed_mistake) / 2.0f * integration_period * robot->speed_ki;
-    if ( robot->speed_integral > 3.0f )
+    // linear speed loop handler
+    robot->speed_integral += (linear_mistake + robot->previous_linear_speed_mistake) / 2.0f * integration_period;
+    robot->speed_i_part = robot->speed_integral * robot->speed_ki;
+    if ( robot->speed_i_part > 2.0f )
     {
-        robot->speed_integral = 3.0f;
-        edge_was_reached = 3;
+        robot->speed_i_part = 2.0f;
     }
-    else if ( robot->speed_integral < -3.0f )
+    else if ( robot->speed_i_part < -2.0f )
     {
-        robot->speed_integral = -3.0f;
-        edge_was_reached = 4;
+        robot->speed_i_part = -2.0f;
     }
-
     robot->previous_linear_speed_mistake = linear_mistake;
 
-    robot->speed_p_part = linear_mistake*robot->speed_kp;
-    robot->target_angle = robot->zero_angle - ( robot->speed_p_part + robot->speed_integral);
+    // rotational speed loop handler
+    robot->rotation_integral += (rotational_mistake + robot->previous_rotational_mistake) / 2.0f * integration_period;
+    robot->rotation_i_part = robot->rotation_integral * robot->rotation_ki;
+    if(robot->rotation_i_part > 300.0f)
+    {
+        robot->rotation_i_part = 300.0f;
+    }
+    else if (robot->rotation_i_part < -300.0f)
+    {
+        robot->rotation_i_part = -300.0f;
+    }
+    robot->previous_rotational_mistake = rotational_mistake;
 
+    robot->rotation_p_part = rotational_mistake * robot->rotation_kp;
+    robot->rotational_task = (int16_t)(robot->rotation_p_part + robot->rotation_i_part);
+
+    robot->speed_p_part = linear_mistake*robot->speed_kp;
+    robot->target_angle = robot->zero_angle - ( robot->speed_p_part + robot->speed_i_part);
 }
 
 void reset_control_system ( balancing_robot *robot)
@@ -369,13 +492,34 @@ void reset_control_system ( balancing_robot *robot)
     robot->speed_integral = 0.0f;
     robot->target_linear_speed = 0.0f;
 
+    robot->rotation_integral = 0.0f;
+    robot->target_rotational_speed = 0.0f;
+
     robot->previous_linear_speed_mistake = 0.0f;
     robot->regulator_control_signal = 0;
+
+    robot->left_motor->speed_controller->current_integral = 0.0f;
+    robot->left_motor->speed_controller->target_speed = 0.0f;
+    robot->right_motor->speed_controller->current_integral = 0.0f;
+    robot->right_motor->speed_controller->target_speed = 0.0f;
 
     robot->left_motor->set_pwm_duty_cycle(robot->regulator_control_signal);
     robot->right_motor->set_pwm_duty_cycle(robot->regulator_control_signal);
 
     robot->target_rotational_speed = 0.0f;
+}
+
+void handle_nrf_message (balancing_robot *robot, uint8_t message[])
+{
+    if (robot->mode == ROBOT_BALANCING)
+    {
+        handle_message_in_balancing_mode(robot, message);
+    }
+    else if (robot->mode == ROBOT_HORIZONTAL_TOP || robot->mode == ROBOT_HORIZONTAL_BOTTOM)
+    {
+        handle_message_in_horizontal_modes(robot, message);
+    }
+
 }
 
 
